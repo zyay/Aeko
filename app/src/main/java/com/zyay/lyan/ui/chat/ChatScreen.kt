@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Description
@@ -100,10 +101,14 @@ fun ChatScreen(
     ) {
         TopBar(
             tps = state.hud.tokensPerSecond,
+            net = state.hud.net,
+            account = state.account,
             showHud = state.showHud,
             onNew = viewModel::newChat,
             onPrivacy = onPrivacy,
-            onTerms = onTerms
+            onTerms = onTerms,
+            onSignIn = { viewModel.auth.signIn(context) },
+            onSignOut = { viewModel.auth.signOut() }
         )
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             if (state.messages.isEmpty()) {
@@ -133,6 +138,7 @@ fun ChatScreen(
             draft = state.draft,
             agentMode = state.agentMode,
             autoTools = state.autoTools,
+            onlineTools = state.onlineTools,
             busy = state.phase != EnginePhase.Idle,
             onDraft = viewModel::onDraft,
             onSend = {
@@ -144,6 +150,7 @@ fun ChatScreen(
             },
             onToggleAgent = viewModel::toggleAgent,
             onToggleAuto = viewModel::toggleAuto,
+            onToggleOnline = viewModel::toggleOnline,
             onAttach = { picker.launch(arrayOf("text/plain", "application/pdf", "text/markdown", "*/*")) },
             onShareLast = {
                 val last = state.messages.lastOrNull { !it.isUser }?.text.orEmpty()
@@ -154,7 +161,17 @@ fun ChatScreen(
 }
 
 @Composable
-private fun TopBar(tps: Float, showHud: Boolean, onNew: () -> Unit, onPrivacy: () -> Unit, onTerms: () -> Unit) {
+private fun TopBar(
+    tps: Float,
+    net: Boolean,
+    account: String?,
+    showHud: Boolean,
+    onNew: () -> Unit,
+    onPrivacy: () -> Unit,
+    onTerms: () -> Unit,
+    onSignIn: () -> Unit,
+    onSignOut: () -> Unit
+) {
     var menu by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -174,13 +191,21 @@ private fun TopBar(tps: Float, showHud: Boolean, onNew: () -> Unit, onPrivacy: (
                 onClick = { menu = false; onTerms() },
                 leadingIcon = { Icon(Icons.Outlined.Gavel, contentDescription = null) }
             )
+            DropdownMenuItem(
+                text = { Text(if (account == null) "Sign in" else "Sign out") },
+                onClick = {
+                    menu = false
+                    if (account == null) onSignIn() else onSignOut()
+                },
+                leadingIcon = { Icon(Icons.Outlined.AccountCircle, contentDescription = null) }
+            )
         }
         Spacer(Modifier.weight(1f))
         Text("Lyan", color = LyanText, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
         Spacer(Modifier.weight(1f))
         if (showHud) {
             Text(
-                text = "${"%.1f".format(tps)} t/s",
+                text = "${"%.1f".format(tps)} t/s${if (net) " NET" else ""}",
                 color = LyanMuted,
                 fontSize = 11.sp,
                 modifier = Modifier.padding(end = 4.dp)
@@ -203,7 +228,7 @@ private fun EmptyHero(phase: EnginePhase) {
         Spacer(Modifier.height(28.dp))
         Text("What's on your mind?", color = LyanText, fontSize = 28.sp, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(8.dp))
-        Text("Private. On-device. No cloud.", color = LyanMuted, fontSize = 14.sp)
+        Text("Private by default. Online tools are opt-in.", color = LyanMuted, fontSize = 14.sp)
     }
 }
 
@@ -233,11 +258,13 @@ private fun Composer(
     draft: String,
     agentMode: Boolean,
     autoTools: Boolean,
+    onlineTools: Boolean,
     busy: Boolean,
     onDraft: (String) -> Unit,
     onSend: () -> Unit,
     onToggleAgent: () -> Unit,
     onToggleAuto: () -> Unit,
+    onToggleOnline: () -> Unit,
     onAttach: () -> Unit,
     onShareLast: () -> Unit
 ) {
@@ -279,6 +306,11 @@ private fun Composer(
                 Chip(
                     label = if (autoTools) "Auto" else "Manual",
                     onClick = onToggleAuto
+                )
+                Spacer(Modifier.width(8.dp))
+                Chip(
+                    label = if (onlineTools) "Online" else "Offline",
+                    onClick = onToggleOnline
                 )
                 Spacer(Modifier.weight(1f))
                 IconButton(onClick = onShareLast) {

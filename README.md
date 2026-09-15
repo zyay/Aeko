@@ -1,44 +1,65 @@
 # Lyan
 
-Android-native personal AI employee. Intelligence without surveillance. Power without the cloud.
+Android-native personal AI employee. Local-first. Optional Vercel identity. Optional on-device internet tools.
 
-## Web UI (official Beam + Orbkit)
+[![CI](https://github.com/zyay/Lyan/actions/workflows/ci.yml/badge.svg)](https://github.com/zyay/Lyan/actions/workflows/ci.yml)
+
+## Install APK (always latest)
+
+Every green `master` build publishes a rolling GitHub Release:
+
+https://github.com/zyay/Lyan/releases/tag/latest
+
+Download `Lyan.apk`. Allow installs from the browser.
+
+## Web (Vercel + Auth.js)
+
+Root Directory on Vercel: `web`.
 
 ```bash
 cd web
 npm install
-npx shadcn@latest add zzzzshawn/orbkit/shdr-21
 npm run dev
 ```
 
-- Composer: [`border-beam`](https://libraries.dev/beam) (`npm install border-beam`)
-- Orb: official [`Shdr21`](https://github.com/zzzzshawn/orbkit) via `npx shadcn@latest add zzzzshawn/orbkit/shdr-21`
+Env (Vercel / `.env.local`):
 
-## Android APK
+- `AUTH_SECRET`
+- `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET`
+- `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`
+- `AUTH_URL` (production origin)
 
-- Dark composer with Lyan’s own pulsing halo (not a third-party beam library).
-- Idle / thinking / speaking orb on the home canvas and while streaming.
-- On-device replies, local vault text from files you attach (Storage Access Framework).
-- Agent Mode: copy, share, alarm intents. No Accessibility Service in this build.
-- In-app Privacy Policy and Terms. Prompts are not sent to a remote model.
+OAuth callback: `{AUTH_URL}/api/auth/callback/github` and `.../google`.
 
-## Install
+Android Custom Tabs open `/login?android=1` then `lyan://auth`.
 
-Download `Lyan-1.0.0.apk` from [GitHub Releases](https://github.com/zyay/Lyan/releases). Android may ask you to allow installs from your browser.
+Composer uses official [`border-beam`](https://libraries.dev/beam). Orb is [`Shdr21`](https://github.com/zzzzshawn/orbkit).
 
-## Build
+## Android
+
+- Default: on-device replies, local vault
+- Agent: copy / share / alarm intents
+- Online (opt-in): `web_search`, `http_fetch` with SSRF guards
+- Sign in: GitHub or Google via Vercel (not required to chat)
 
 ```bash
 ./gradlew assembleRelease
 ```
 
-The signed APK is written to `app/build/outputs/apk/release/`.
+GitHub Actions secrets for signed rolling APK:
+
+- `LYAN_KEYSTORE_BASE64`
+- `LYAN_KEYSTORE_PASSWORD`
+- `LYAN_KEY_ALIAS`
+- `LYAN_KEY_PASSWORD`
+
+Optional: `LYAN_AUTH_URL` (defaults to `https://lyan.vercel.app`).
 
 ## Legal
 
 See [PRIVACY.md](PRIVACY.md) and [TERMS.md](TERMS.md).
 
-Lyan is not affiliated with xAI or Grok. The UI follows a familiar composer pattern; branding is Lyan.
+Lyan is not affiliated with xAI or Grok.
 
 ## License
 

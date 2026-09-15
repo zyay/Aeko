@@ -1,2 +1,7 @@
 -keep class com.zyay.lyan.** { *; }
+-keep class okhttp3.** { *; }
+-dontwarn okhttp3.**
+-dontwarn okio.**
 -dontwarn kotlinx.**
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn com.google.crypto.tink.**
