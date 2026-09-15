@@ -15,3 +15,5 @@
 *.jks
 keystore.properties
 .kotlin
+node_modules
+web/dist

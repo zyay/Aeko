@@ -2,7 +2,19 @@
 
 Android-native personal AI employee. Intelligence without surveillance. Power without the cloud.
 
-## What this APK does
+## Web UI (official Beam + Orbkit)
+
+```bash
+cd web
+npm install
+npx shadcn@latest add zzzzshawn/orbkit/shdr-21
+npm run dev
+```
+
+- Composer: [`border-beam`](https://libraries.dev/beam) (`npm install border-beam`)
+- Orb: official [`Shdr21`](https://github.com/zzzzshawn/orbkit) via `npx shadcn@latest add zzzzshawn/orbkit/shdr-21`
+
+## Android APK
 
 - Dark composer with Lyan’s own pulsing halo (not a third-party beam library).
 - Idle / thinking / speaking orb on the home canvas and while streaming.
