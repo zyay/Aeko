@@ -45,10 +45,12 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
       - name: Decode release keystore
-        if: ${{ secrets.LYAN_KEYSTORE_BASE64 != '' }}
         env:
           LYAN_KEYSTORE_BASE64: ${{ secrets.LYAN_KEYSTORE_BASE64 }}
-        run: echo "$LYAN_KEYSTORE_BASE64" | base64 -d > release.keystore
+        run: |
+          if [ -n "$LYAN_KEYSTORE_BASE64" ]; then
+            echo "$LYAN_KEYSTORE_BASE64" | base64 -d > release.keystore
+          fi
       - name: Build release APK
         env:
           LYAN_KEYSTORE_PASSWORD: ${{ secrets.LYAN_KEYSTORE_PASSWORD }}
@@ -66,8 +68,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -e
+          set -euo pipefail
           APK=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
           cp "$APK" Lyan.apk
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest Lyan.apk --title "Lyan latest" --notes "Installable APK from commit ${GITHUB_SHA}. Rolling release replaced on every green master build."
+          gh release create latest Lyan.apk --title "Lyan latest" --notes "Installable APK from commit ${GITHUB_SHA}. Rolling release from current master."
