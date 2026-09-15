@@ -1,0 +1,2 @@
+-keep class com.zyay.lyan.** { *; }
+-dontwarn kotlinx.**
