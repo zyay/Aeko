@@ -8,22 +8,30 @@ android {
     namespace = "com.zyay.lyan"
     compileSdk = 35
 
+    val gitSha = System.getenv("GITHUB_SHA")?.take(7) ?: "dev"
+    val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+    val keystoreFile = rootProject.file("release.keystore")
+    val storePass = System.getenv("LYAN_KEYSTORE_PASSWORD") ?: "lyan-release"
+    val alias = System.getenv("LYAN_KEY_ALIAS") ?: "lyan"
+    val keyPass = System.getenv("LYAN_KEY_PASSWORD") ?: "lyan-release"
+    val authUrl = System.getenv("LYAN_AUTH_URL") ?: "https://lyan.vercel.app"
+
     defaultConfig {
         applicationId = "com.zyay.lyan"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = runNumber
+        versionName = "1.0.$runNumber+$gitSha"
+        buildConfigField("String", "AUTH_URL", "\"$authUrl\"")
     }
 
     signingConfigs {
         create("release") {
-            val keystoreFile = rootProject.file("release.keystore")
             if (keystoreFile.exists()) {
                 storeFile = keystoreFile
-                storePassword = "lyan-release"
-                keyAlias = "lyan"
-                keyPassword = "lyan-release"
+                storePassword = storePass
+                keyAlias = alias
+                keyPassword = keyPass
             }
         }
     }
@@ -40,10 +48,6 @@ android {
             if (releaseSigning?.storeFile?.exists() == true) {
                 signingConfig = releaseSigning
             }
-        }
-        debug {
-            applicationIdSuffix = ""
-            versionNameSuffix = ""
         }
     }
 
@@ -74,9 +78,13 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.activity:activity-compose:1.9.3")
+    implementation("androidx.browser:browser:1.8.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.navigation:navigation-compose:2.8.4")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

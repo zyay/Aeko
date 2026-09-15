@@ -1,5 +1,5 @@
 # Privacy Policy
 
-Lyan processes chat, attachments, and preferences on your Android device. This project does not operate a cloud inference API and does not sell personal data.
+Lyan is local-first. Optional Vercel sign-in (GitHub/Google) is identity only. Optional Android Online tools perform HTTPS search/fetch from the device when you enable them.
 
-See the in-app Privacy Policy (menu → Privacy Policy) for the full statement, including permissions, children, and contact via https://github.com/zyay/Lyan.
+Full text is in the app, at `/privacy` on the web UI, and summarized here. Contact: https://github.com/zyay/Lyan

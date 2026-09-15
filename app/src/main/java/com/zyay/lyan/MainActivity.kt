@@ -32,6 +32,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         ingestShare(intent)
+        ingestAuth(intent)
         setContent {
             MaterialTheme(
                 colorScheme = darkColorScheme(background = LyanBlack, surface = LyanBlack),
@@ -47,11 +48,16 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         ingestShare(intent)
+        ingestAuth(intent)
     }
 
     private fun ingestShare(intent: Intent?) {
         val text = intent?.getStringExtra(Intent.EXTRA_TEXT)
         if (!text.isNullOrBlank()) chatViewModel.ingestShared(text)
+    }
+
+    private fun ingestAuth(intent: Intent?) {
+        chatViewModel.auth.capture(intent?.data)
     }
 }
 
