@@ -12,7 +12,7 @@ Highlight-style agent workspace: colorful bots, inbox of tasks, encrypted thread
 
 ## Vercel dashboard (you must click this)
 
-Import **`zyay/Lyan`**. Set **Root Directory = `web`**.
+Import **`zyay/Lyan`** (Root Directory `web`) or use the live project **aeko** on the alpaca6 team: [https://aeko.vercel.app](https://aeko.vercel.app).
 
 Environment:
 

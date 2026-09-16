@@ -1,0 +1,9 @@
+/app/
+/.github/
+/.gradle/
+*.apk
+*.keystore
+/node_modules
+/web/node_modules
+/web/.next
+/web/.env.local

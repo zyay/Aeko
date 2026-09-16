@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { BorderBeam } from "border-beam";
 import { ThinkingOrb } from "thinking-orbs";
 import { Liquid } from "liquid-gooey";
-import { useMicrophone } from "voice-beam";
+import { useMicrophone } from "@/vendor/voice-beam";
 import { DynImage, DynVoice, DynStrobi } from "@/components/dyn-fx";
 import {
   decryptMessage,

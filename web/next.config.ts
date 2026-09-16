@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
     "thinking-orbs",
     "liquid-gooey",
     "img-fx",
-    "voice-beam",
     "@bible-strong/avatar-react",
     "@bible-strong/avatar-core",
   ],
