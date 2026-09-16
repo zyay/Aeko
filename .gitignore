@@ -17,3 +17,4 @@ keystore.properties
 .kotlin
 node_modules
 web/dist
+web/data

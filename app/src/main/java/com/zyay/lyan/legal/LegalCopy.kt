@@ -7,24 +7,18 @@ Effective: 16 September 2026
 Operator: zyay (open-source project Lyan)
 
 1. Principle
-Lyan is local-first. Chat and vault stay on this device. No cloud inference API.
+Keys stay on this phone (EncryptedSharedPreferences). Prompts go to the OpenAI-compatible URL you set, not to Vercel (proxy off by default).
 
 2. Optional Vercel sign-in
-GitHub/Google via Auth.js. Identity only.
+GitHub/Google via Auth.js. Identity + encrypted rooms.
 
-3. Optional Hugging Face downloads
-When you tap Download GGUF, this phone fetches a model file from huggingface.co over HTTPS. An optional HF token is stored on device. The GGUF is not uploaded back.
+3. Ciphertext rooms
+Vercel stores iv/ciphertext, member emails, wrapped keys. Not your LLM prompt.
 
-4. Optional Online tools
-web_search and http_fetch run from the phone when Online is on. Private IPs are blocked for fetch.
+4. Hugging Face / SSH / Online tools
+Opt-in. Valid key test turns Online on. Notifications never include message text.
 
-5. Optional SSH and noVNC
-You enter PC host credentials. Commands and SFTP run to that host. noVNC loads a URL you set (often LAN HTTP). You are responsible for securing that PC.
-
-6. Permissions
-INTERNET for HF, tools, SSH, VNC, OAuth. SAF for vault files.
-
-7. Contact
+5. Contact
 https://github.com/zyay/Lyan
 """
 
@@ -34,9 +28,7 @@ Effective: 16 September 2026
 
 Install the signed APK from GitHub Releases (latest). Enable unknown sources.
 
-Hugging Face downloads, SSH, and VNC are opt-in. Remote command execution can harm the PC you connect to. Outputs are not professional advice.
-
-OpenHands-style tools are a local registry (search, fetch, ssh_exec/read, open_url), not the Python OpenHands runtime.
+You bring the brain (API key+URL, own server, or GGUF). Shared tasks are E2E ciphertext. SSH/VNC can control a PC you configure.
 
 MIT, as-is. https://github.com/zyay/Lyan
 """

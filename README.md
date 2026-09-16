@@ -1,32 +1,43 @@
 # Lyan
 
-Android-native personal AI employee. Local-first. Optional Hugging Face GGUF download, SSH to your PC, noVNC screen, and OpenHands-style tools.
+Personal AI employee: **your** OpenAI-compatible brain, encrypted task threads, Teams-style workspace on Android and the web.
 
 [![CI](https://github.com/zyay/Lyan/actions/workflows/ci.yml/badge.svg)](https://github.com/zyay/Lyan/actions/workflows/ci.yml)
 
-## Install (sideload)
+## Install
 
-The APK is **always signed** (release keystore if present, otherwise the Android debug key).
+1. Download [Lyan.apk](https://github.com/zyay/Lyan/releases/tag/latest) (always signed)
+2. Allow unknown sources for your browser
+3. Open the APK
 
-1. Download [Lyan.apk](https://github.com/zyay/Lyan/releases/tag/latest)
-2. Settings → Apps → Special access → Install unknown apps → allow your browser
-3. Open `Lyan.apk`
+Web (PC): deploy `web/` on Vercel, or `cd web && npm install && npm run dev`.
 
-If Android says the file is damaged, you had an **unsigned** build. Use this latest signed file.
+## Three brains (equal)
 
-## Hugging Face models
+During onboarding pick one:
 
-Menu → **Models**. Paste a `resolve/main/*.gguf` URL (default MiniCPM Q4) and optional HF token. File lands in app storage. llama.cpp inference is not in this APK yet.
+- **API key + base URL** — OpenAI, Groq, OpenRouter, LM Studio, Ollama, vLLM (`POST /v1/chat/completions`)
+- **Own server** — same schema, optional bearer
+- **Download GGUF** — Hugging Face file on Android (`Models`). llama.cpp JNI is not in this APK yet; use BYOK until then.
 
-## SSH + PC screen
+**Test** pings the endpoint. A valid key turns **Online** tools on (search/fetch/SSH as before). The key never goes to Vercel unless you set `LYAN_LLM_PROXY=1`.
 
-Menu → **Devices**: OpenSSH host/user/password, Connect, run commands.  
-Menu → **PC screen**: WebView to your noVNC URL (e.g. `http://192.168.1.10:6080/vnc.html`). PC needs VNC + websockify.
+Web calls your URL **from the browser**. Your server must allow CORS, or use a local server.
 
-## OpenHands-style tools
+## Encrypted tasks
 
-Turn **Online** on for live `web_search` / `http_fetch`. With SSH connected, ask Lyan to run a command or read `/path` on the PC. Agent mode can open `https://` URLs.
+Sign in (GitHub/Google). Create a task, invite by email (they must sign in once). Messages are AES-GCM; Vercel stores ciphertext only.
 
-## Web
+Postgres schema: `web/src/lib/schema.sql` (`DATABASE_URL`). Without it, the API uses a JSON file (`web/data` locally, `/tmp` on Vercel — set Postgres for production).
 
-`cd web && npm install && npm run dev` — Vercel Auth.js, border-beam, SHDR-21.
+## Notifications
+
+“New activity in task X” — no message body. Android `POST_NOTIFICATIONS`; web Notification API. Poll ~15–20s.
+
+## SSH / VNC / HF
+
+Menu → Models, Devices, PC screen — unchanged.
+
+## Privacy / Terms
+
+See in-app screens or `/privacy` `/terms` on the web.

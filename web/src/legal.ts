@@ -1,43 +1,46 @@
 export const privacyText = `LYAN PRIVACY POLICY
-Effective: 15 September 2026
+Effective: 16 September 2026
 Operator: zyay (open-source project Lyan)
 
 1. Principle
-Lyan is local-first. Chat, attachments, and vault data are processed on your device or in this browser tab. Lyan does not operate a cloud inference API and does not sell personal data.
+Lyan is local-first. Your LLM key and prompts go to the URL you set (OpenAI-compatible), never to Vercel by default. Optional Vercel LLM proxy is off unless you enable LYAN_LLM_PROXY.
 
-2. Optional Vercel sign-in
-If you sign in, Vercel + Auth.js stores a session cookie after GitHub or Google OAuth. We use that for identity (email/name) only. Chat transcripts are not uploaded in this release.
+2. Identity
+GitHub/Google via Auth.js on Vercel. Email is used for task membership.
 
-3. Optional Online tools (Android)
-When you enable Online in the Android composer, Lyan may perform HTTPS web_search and http_fetch from the phone. Private/local addresses are blocked. Turn Online off and no tool HTTP runs.
+3. Encrypted tasks
+Room messages are AES-GCM ciphertext. Vercel stores iv + ciphertext, member emails, and wrapped room keys. Operators can see ciphertext and emails, not your plaintext or your API key.
 
-4. Permissions
-Storage/SAF: files you pick. Clipboard/intents: Agent Mode. Internet: sign-in and Online tools.
+4. Brains
+BYOK / own server: requests leave this device to your base URL. GGUF downloads stay on Android storage.
 
-5. Children
-Not directed at children under 13.
+5. Notifications
+“New activity in task X” — no message body.
 
-6. Contact
+6. Tools
+Android Online: web_search / http_fetch / SSH. Auto-on after a valid key test.
+
+7. Contact
 https://github.com/zyay/Lyan
 `;
 
 export const termsText = `LYAN TERMS OF USE
-Effective: 15 September 2026
+Effective: 16 September 2026
 
 1. License
-Open-source, provided as-is, no warranty.
+MIT, as-is.
 
-2. Not professional advice
-Outputs can be wrong.
+2. Your models
+You are responsible for API keys, own servers, and GGUF licenses.
 
-3. Agent Mode and Online tools
-Agent Mode may fire Android intents you request. Online tools fetch public HTTPS pages you trigger. You are responsible for use.
+3. Collaboration
+Invites use the email of a signed-in account. E2E requires both devices to hold matching identity keys. Recovery passphrase is your job.
 
-4. Sign-in
-Optional. GitHub/Google via Vercel.
+4. Remote tools
+SSH and Agent intents can affect devices you connect. Not professional advice.
 
-5. Limitation of liability
-To the maximum extent permitted by law, authors are not liable for damages from use of Lyan.
+5. Sideload
+Install the signed APK from GitHub Releases (latest). Enable unknown sources.
 
 Project: https://github.com/zyay/Lyan
 `;
