@@ -121,6 +121,47 @@ class CollabClient(context: Context) {
         return id
     }
 
+    data class RoomMsg(val id: String, val from: String, val iv: String, val ciphertext: String)
+    data class RoomSnapshot(val key: String, val members: List<String>, val messages: List<RoomMsg>)
+
+    fun roomKey(roomId: String): String? = prefs.getString("room_$roomId", null)
+
+    fun rememberKey(roomId: String, key: String) {
+        prefs.edit().putString("room_$roomId", key).apply()
+    }
+
+    fun fetchSnapshot(token: String, roomId: String): RoomSnapshot {
+        val json = get("$root/api/rooms/$roomId/messages", token)
+        val mine = json.optJSONObject("membership") ?: JSONObject()
+        val cached = roomKey(roomId)
+        val key = cached ?: unwrap(
+            mine.optString("wrappedKey"),
+            mine.optString("wrapIv"),
+            mine.optString("peerPub")
+        ).also { rememberKey(roomId, it) }
+        val members = json.optJSONArray("members") ?: JSONArray()
+        val emails = buildList {
+            for (i in 0 until members.length()) add(members.optJSONObject(i)?.optString("email").orEmpty())
+        }.filter { it.isNotBlank() }
+        val raw = json.optJSONArray("messages") ?: JSONArray()
+        val messages = buildList {
+            for (i in 0 until raw.length()) {
+                val m = raw.optJSONObject(i) ?: continue
+                add(RoomMsg(m.optString("id"), m.optString("from"), m.optString("iv"), m.optString("ciphertext")))
+            }
+        }
+        return RoomSnapshot(key, emails, messages)
+    }
+
+    fun postCipher(token: String, roomId: String, iv: String, ciphertext: String) {
+        post(
+            "$root/api/rooms/$roomId/messages",
+            token,
+            JSONObject().put("iv", iv).put("ciphertext", ciphertext)
+        )
+        post("$root/api/rooms/$roomId/notify", token, JSONObject())
+    }
+
     fun invite(token: String, roomId: String, email: String) {
         val key = prefs.getString("room_$roomId", null) ?: return
         val lookup = get("$root/api/users?email=${java.net.URLEncoder.encode(email, "UTF-8")}", token)

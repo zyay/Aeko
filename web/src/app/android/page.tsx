@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { issueToken } from "@/lib/store";
+import { issueClaim } from "@/lib/store";
 import { redirect } from "next/navigation";
 
 export default async function AndroidLinkPage() {
@@ -7,15 +7,13 @@ export default async function AndroidLinkPage() {
   if (!session?.user?.email) {
     redirect("/login?android=1");
   }
-  const token = await issueToken(session.user.email);
-  const deep = `aeko://auth?email=${encodeURIComponent(session.user.email)}&name=${encodeURIComponent(session.user.name ?? "")}&token=${encodeURIComponent(token)}`;
+  const claim = await issueClaim(session.user.email, session.user.name ?? "");
+  const deep = `aeko://auth?email=${encodeURIComponent(claim.email)}&name=${encodeURIComponent(claim.name)}&code=${encodeURIComponent(claim.code)}`;
   return (
     <main className="android-open">
       <div>
-      <p>Opening Aeko…</p>
-      <a href={deep}>
-        Return to the Android app
-      </a>
+        <p>Opening Aeko…</p>
+        <a href={deep}>Return to the Android app</a>
       </div>
       <script
         dangerouslySetInnerHTML={{

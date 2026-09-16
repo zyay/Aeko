@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "check-crypto": "node scripts/check-crypto.mjs"
   },
   "dependencies": {
     "@bible-strong/avatar-core": "^0.1.0",
@@ -19,7 +20,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "thinking-orbs": "^0.3.1",
-    "three": "^0.186.0"
+    "three": "^0.186.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

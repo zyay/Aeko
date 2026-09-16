@@ -49,7 +49,7 @@ class HfModelStore(context: Context) {
             ready = ready,
             path = if (ready) file.absolutePath else null,
             bytes = if (file.exists()) file.length() else 0,
-            message = if (ready) "Model downloaded. llama.cpp runtime is next — file is ready on device." else "No GGUF on device"
+            message = if (ready) "GGUF on disk. JNI or llama-server :8080 for inference." else "No GGUF on device"
         )
     }
 

@@ -54,6 +54,7 @@ fun DevicesScreen(store: DeviceStore, ssh: SshClient, onBack: () -> Unit, onVnc:
     var port by remember { mutableStateOf(store.port.toString()) }
     var user by remember { mutableStateOf(store.user) }
     var password by remember { mutableStateOf(store.password) }
+    var keyPath by remember { mutableStateOf(store.keyPath) }
     var vnc by remember { mutableStateOf(store.vncUrl) }
     var command by remember { mutableStateOf("uname -a") }
     var output by remember { mutableStateOf("") }
@@ -82,11 +83,19 @@ fun DevicesScreen(store: DeviceStore, ssh: SshClient, onBack: () -> Unit, onVnc:
         DeviceField(port, "Port", colors) { port = it; store.port = it.toIntOrNull() ?: 22 }
         DeviceField(user, "User", colors) { user = it; store.user = it }
         DeviceField(password, "Password", colors) { password = it; store.password = it }
+        DeviceField(keyPath, "Private key file (optional)", colors) { keyPath = it; store.keyPath = it }
         DeviceField(vnc, "noVNC URL", colors) { vnc = it; store.vncUrl = it }
+        if (store.hostFingerprint.isNotBlank()) {
+            Text("Trusted host key ${store.hostFingerprint}", color = AekoMuted, fontSize = 12.sp, modifier = Modifier.padding(12.dp))
+        }
         Spacer(Modifier.height(8.dp))
         Button(
             onClick = {
-                scope.launch { ssh.connect(host, port.toIntOrNull() ?: 22, user, password) }
+                scope.launch {
+                    ssh.connect(host, port.toIntOrNull() ?: 22, user, password, keyPath, store.hostFingerprint) { fp ->
+                        store.hostFingerprint = fp
+                    }
+                }
             },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).height(48.dp),
             shape = RoundedCornerShape(14.dp),

@@ -15,15 +15,19 @@ export type MessageRow = {
 };
 
 type TokenRow = { token: string; email: string };
+type ClaimRow = { code: string; email: string; name: string; token: string; exp: number };
+export type PushRow = { email: string; endpoint: string; p256dh: string; auth: string };
 type Db = {
   users: UserRow[];
   rooms: RoomRow[];
   members: MemberRow[];
   messages: MessageRow[];
   tokens: TokenRow[];
+  claims: ClaimRow[];
+  push: PushRow[];
 };
 
-const empty = (): Db => ({ users: [], rooms: [], members: [], messages: [], tokens: [] });
+const empty = (): Db => ({ users: [], rooms: [], members: [], messages: [], tokens: [], claims: [], push: [] });
 
 function filePath() {
   const dir = process.env.VERCEL ? "/tmp/aeko" : join(process.cwd(), "data");
@@ -40,6 +44,8 @@ function load(): Db {
       members: parsed.members ?? [],
       messages: parsed.messages ?? [],
       tokens: parsed.tokens ?? [],
+      claims: parsed.claims ?? [],
+      push: parsed.push ?? [],
     };
   } catch {
     return empty();
@@ -68,6 +74,8 @@ async function ready() {
     await sql`CREATE TABLE IF NOT EXISTS aeko_messages (
       id TEXT PRIMARY KEY, room_id TEXT NOT NULL, sender TEXT NOT NULL, iv TEXT NOT NULL, ciphertext TEXT NOT NULL, created_at BIGINT NOT NULL)`;
     await sql`CREATE TABLE IF NOT EXISTS aeko_tokens (token TEXT PRIMARY KEY, email TEXT NOT NULL)`;
+    await sql`CREATE TABLE IF NOT EXISTS aeko_claims (code TEXT PRIMARY KEY, email TEXT NOT NULL, name TEXT NOT NULL, token TEXT NOT NULL, exp BIGINT NOT NULL)`;
+    await sql`CREATE TABLE IF NOT EXISTS aeko_push (endpoint TEXT PRIMARY KEY, email TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL)`;
     schemaReady = true;
   }
   return sql;
@@ -115,6 +123,15 @@ export async function createRoom(title: string, owner: string, wrappedKey: strin
   db.members.push({ roomId: id, email: owner, wrappedKey, wrapIv, peerPub });
   save(db);
   return id;
+}
+
+export async function getRoom(id: string) {
+  const sql = await ready();
+  if (sql) {
+    const rows = await sql`SELECT id, title, created_at AS "createdAt" FROM aeko_rooms WHERE id = ${id}`;
+    return (rows[0] as RoomRow | undefined) ?? undefined;
+  }
+  return load().rooms.find((r) => r.id === id);
 }
 
 export async function roomsFor(email: string) {
@@ -207,4 +224,63 @@ export async function emailForToken(token: string) {
     return (rows[0] as { email: string } | undefined)?.email;
   }
   return load().tokens.find((t) => t.token === token)?.email;
+}
+
+export async function issueClaim(email: string, name: string) {
+  const token = await issueToken(email);
+  const code = crypto.randomUUID().replace(/-/g, "").slice(0, 24);
+  const exp = Date.now() + 120_000;
+  const sql = await ready();
+  if (sql) {
+    await sql`DELETE FROM aeko_claims WHERE email = ${email}`;
+    await sql`INSERT INTO aeko_claims (code, email, name, token, exp) VALUES (${code}, ${email}, ${name}, ${token}, ${exp})`;
+    return { code, email, name };
+  }
+  const db = load();
+  db.claims = db.claims.filter((c) => c.email !== email);
+  db.claims.push({ code, email, name, token, exp });
+  save(db);
+  return { code, email, name };
+}
+
+export async function consumeClaim(code: string) {
+  const now = Date.now();
+  const sql = await ready();
+  if (sql) {
+    const rows = await sql`SELECT email, name, token, exp FROM aeko_claims WHERE code = ${code}`;
+    const row = rows[0] as { email: string; name: string; token: string; exp: number } | undefined;
+    if (!row || Number(row.exp) < now) return null;
+    await sql`DELETE FROM aeko_claims WHERE code = ${code}`;
+    return { email: row.email, name: row.name, token: row.token };
+  }
+  const db = load();
+  const row = db.claims.find((c) => c.code === code);
+  if (!row || row.exp < now) return null;
+  db.claims = db.claims.filter((c) => c.code !== code);
+  save(db);
+  return { email: row.email, name: row.name, token: row.token };
+}
+
+export async function savePush(row: PushRow) {
+  const sql = await ready();
+  if (sql) {
+    await sql`INSERT INTO aeko_push (endpoint, email, p256dh, auth) VALUES (${row.endpoint}, ${row.email}, ${row.p256dh}, ${row.auth})
+      ON CONFLICT (endpoint) DO UPDATE SET email = ${row.email}, p256dh = ${row.p256dh}, auth = ${row.auth}`;
+    return;
+  }
+  const db = load();
+  db.push = db.push.filter((p) => p.endpoint !== row.endpoint);
+  db.push.push(row);
+  save(db);
+}
+
+export async function pushForRoom(roomId: string) {
+  const people = await membersOf(roomId);
+  const emails = new Set(people.map((p) => p.email));
+  const sql = await ready();
+  if (sql) {
+    const rows = (await sql`SELECT endpoint, email, p256dh, auth FROM aeko_push`) as PushRow[];
+    return rows.filter((r) => emails.has(r.email));
+  }
+  return load().push.filter((p) => emails.has(p.email));
 }

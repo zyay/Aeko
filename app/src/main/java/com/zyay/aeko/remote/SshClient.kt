@@ -5,6 +5,7 @@ import com.jcraft.jsch.ChannelSftp
 import com.jcraft.jsch.JSch
 import com.jcraft.jsch.Session
 import java.io.ByteArrayOutputStream
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,17 +19,34 @@ class SshClient {
     private val _log = MutableStateFlow("Disconnected")
     val log: StateFlow<String> = _log
 
-    suspend fun connect(host: String, port: Int, user: String, password: String): String =
+    suspend fun connect(
+        host: String,
+        port: Int,
+        user: String,
+        password: String,
+        keyPath: String = "",
+        expectedFingerprint: String = "",
+        onTrust: (String) -> Unit = {}
+    ): String =
         withContext(Dispatchers.IO) {
             disconnect()
             runCatching {
+                if (keyPath.isNotBlank() && File(keyPath).isFile) {
+                    jsch.addIdentity(keyPath)
+                }
                 val s = jsch.getSession(user, host, port)
-                s.setPassword(password)
+                if (password.isNotBlank()) s.setPassword(password)
                 s.setConfig("StrictHostKeyChecking", "no")
                 s.connect(12_000)
+                val fp = s.hostKey?.getFingerPrint(jsch) ?: ""
+                if (expectedFingerprint.isNotBlank() && !expectedFingerprint.equals(fp, ignoreCase = true)) {
+                    s.disconnect()
+                    throw IllegalStateException("Host key mismatch. Expected $expectedFingerprint got $fp")
+                }
+                if (expectedFingerprint.isBlank() && fp.isNotBlank()) onTrust(fp)
                 session = s
                 _connected.value = true
-                _log.value = "Connected to $user@$host:$port"
+                _log.value = "Connected to $user@$host:$port · $fp"
                 _log.value
             }.getOrElse {
                 _connected.value = false
