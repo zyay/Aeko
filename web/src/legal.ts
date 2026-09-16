@@ -20,7 +20,10 @@ BYOK / own server: requests leave this device to your base URL. GGUF downloads s
 6. Tools
 Android Online: web_search / http_fetch / SSH. Auto-on after a valid key test.
 
-7. Contact
+7. Web mascot
+Strobi (@bible-strong/avatar-react) is AGPL-licensed. It runs only in the browser.
+
+8. Contact
 https://github.com/zyay/Lyan
 `;
 
@@ -39,8 +42,11 @@ Invites use the email of a signed-in account. E2E requires both devices to hold 
 4. Remote tools
 SSH and Agent intents can affect devices you connect. Not professional advice.
 
-5. Sideload
+6. Sideload
 Install the signed APK from GitHub Releases (latest). Enable unknown sources.
+
+7. Mascot
+Strobi on the website is AGPL. The rest of Lyan is MIT.
 
 Project: https://github.com/zyay/Lyan
 `;

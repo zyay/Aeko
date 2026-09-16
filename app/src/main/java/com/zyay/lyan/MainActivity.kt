@@ -88,7 +88,8 @@ private fun LyanRoot(viewModel: ChatViewModel) {
         LyanRoute.Inbox -> InboxScreen(
             viewModel = viewModel,
             onOpen = { route = LyanRoute.Chat },
-            onSettings = { from = LyanRoute.Inbox; route = LyanRoute.Models }
+            onSettings = { from = LyanRoute.Inbox; route = LyanRoute.Models },
+            onDevices = { from = LyanRoute.Inbox; route = LyanRoute.Devices }
         )
         LyanRoute.Chat -> ChatScreen(
             viewModel = viewModel,

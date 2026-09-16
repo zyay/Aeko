@@ -21,7 +21,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Computer
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -48,7 +48,8 @@ private val hues = listOf(BlobGreen, BlobOrange, Color(0xFF111111), Color(0xFFA3
 fun InboxScreen(
     viewModel: ChatViewModel,
     onOpen: () -> Unit,
-    onSettings: () -> Unit
+    onSettings: () -> Unit,
+    onDevices: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     Column(Modifier.fillMaxSize().background(Color.White).statusBarsPadding()) {
@@ -60,7 +61,7 @@ fun InboxScreen(
             Spacer(Modifier.width(10.dp))
             Text("Lyan", color = LyanInk, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
             IconButton(onClick = onSettings) { Icon(Icons.Outlined.Settings, null, tint = LyanInk) }
-            IconButton(onClick = {}) { Icon(Icons.Outlined.Search, null, tint = LyanInk) }
+            IconButton(onClick = onDevices) { Icon(Icons.Outlined.Computer, null, tint = LyanInk) }
             IconButton(onClick = { viewModel.addTask("Task ${state.tasks.size + 1}"); onOpen() }) {
                 Icon(Icons.Outlined.Add, null, tint = LyanInk)
             }

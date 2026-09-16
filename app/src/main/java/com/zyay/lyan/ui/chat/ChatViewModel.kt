@@ -47,7 +47,9 @@ data class ChatUiState(
     val modelReady: Boolean = false,
     val tasks: List<String> = listOf("General"),
     val currentTask: String = "General",
-    val brainMode: String = "byok"
+    val brainMode: String = "byok",
+    val roomId: String? = null,
+    val inviteHint: String = ""
 )
 
 class ChatViewModel(app: Application) : AndroidViewModel(app) {
@@ -127,9 +129,23 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             val token = auth.token()
             if (token.isNotBlank()) runCatching {
                 collab.publishKey(token)
-                collab.createRoom(token, name)
+                val id = collab.createRoom(token, name)
+                _state.update { it.copy(roomId = id.ifBlank { it.roomId }) }
             }
             ActivityNotify.show(getApplication(), name)
+        }
+    }
+
+    fun invitePerson(email: String) {
+        val room = _state.value.roomId
+        viewModelScope.launch(Dispatchers.IO) {
+            val token = auth.token()
+            if (token.isBlank() || room.isNullOrBlank()) {
+                _state.update { it.copy(inviteHint = "Sign in and create a task first") }
+                return@launch
+            }
+            val err = runCatching { collab.invite(token, room, email) }.exceptionOrNull()
+            _state.update { it.copy(inviteHint = if (err == null) "Invited $email" else (err.message ?: "invite failed")) }
         }
     }
 
@@ -150,7 +166,9 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 modelReady = it.modelReady,
                 tasks = it.tasks,
                 currentTask = it.currentTask,
-                brainMode = it.brainMode
+                brainMode = it.brainMode,
+                roomId = it.roomId,
+                inviteHint = it.inviteHint
             )
         }
     }

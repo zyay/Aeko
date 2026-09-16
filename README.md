@@ -4,42 +4,47 @@ Highlight-style agent workspace: colorful bots, inbox of tasks, encrypted thread
 
 [![CI](https://github.com/zyay/Lyan/actions/workflows/ci.yml/badge.svg)](https://github.com/zyay/Lyan/actions/workflows/ci.yml)
 
-## Install
+## Install (Android)
 
 1. Download [Lyan.apk](https://github.com/zyay/Lyan/releases/tag/latest)
 2. Allow unknown sources
 3. Open the APK
 
-## Vercel (web)
+## Vercel dashboard (you must click this)
 
-Import `zyay/Lyan` on Vercel. **Root Directory: `web`**.
+Import **`zyay/Lyan`**. Set **Root Directory = `web`**.
 
 Environment:
 
-- `AUTH_SECRET` (random 32+ chars)
-- `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET`
-- `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`
-- `AUTH_URL` = `https://<project>.vercel.app`
-- `DATABASE_URL` or `POSTGRES_URL` — Vercel Postgres / Neon (see `web/src/lib/schema.sql`)
+| Name | Value |
+| --- | --- |
+| `AUTH_SECRET` | random 32+ chars |
+| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | GitHub OAuth app |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Google OAuth |
+| `AUTH_URL` | `https://<project>.vercel.app` |
+| `AUTH_TRUST_HOST` | `true` |
+| `DATABASE_URL` or `POSTGRES_URL` | Vercel Postgres / Neon |
+| `LYAN_LLM_PROXY` | `0` (keep off) |
 
-GitHub OAuth callback: `https://<project>.vercel.app/api/auth/callback/github`  
-Google: `.../api/auth/callback/google`
+OAuth callbacks:
 
-Health: `GET /api/health`
+- `https://<host>/api/auth/callback/github`
+- `https://<host>/api/auth/callback/google`
 
-Without Postgres the API falls back to a JSON file (`/tmp` on Vercel — not durable).
+Health: `GET /api/health` → `{ ok, db: "postgres"|"file" }`. Without `DATABASE_URL` rooms live in `/tmp` and vanish.
 
-Local: `cd web && npm install && npm run dev`
+Optional GitHub secrets for deploy: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+
+Local: `cd web && npm install --legacy-peer-deps && npm run dev`
 
 ## Libraries.dev + mascot
 
-Official packages on web: `border-beam`, `thinking-orbs`, `liquid-gooey`, `img-fx` (+ `three`), `voice-beam`. Mascot is `@bible-strong/avatar-react` `createAvatar` + Strobi `.avatar.json` (AGPL).
-
+Web: `border-beam`, `thinking-orbs`, `liquid-gooey`, `img-fx` + `three`, `voice-beam`. Mascot: `@bible-strong/avatar-react` `createAvatar` + Strobi JSON (**AGPL**). Android uses Compose blobs (native Libraries.dev ports are not on npm).
 
 ## Brains
 
-API key + URL, own `/v1` server, or GGUF on Android. Test key never sent to Vercel (proxy off unless `LYAN_LLM_PROXY=1`).
+API key + URL, own `/v1` server, or GGUF download on Android. Test never sends the key to Vercel.
 
 ## Tasks
 
-Sign in, create a bot/task, invite by email. AES-GCM ciphertext on Vercel. Notifications have no message body.
+Sign in, create a bot/task, invite by email. AES-GCM + ECDH P-256 JWK on both web and Android. Notifications have no message body.
