@@ -1,0 +1,76 @@
+package com.zyay.lyan.remote
+
+import com.jcraft.jsch.ChannelExec
+import com.jcraft.jsch.ChannelSftp
+import com.jcraft.jsch.JSch
+import com.jcraft.jsch.Session
+import java.io.ByteArrayOutputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
+
+class SshClient {
+    private val jsch = JSch()
+    private var session: Session? = null
+    private val _connected = MutableStateFlow(false)
+    val connected: StateFlow<Boolean> = _connected
+    private val _log = MutableStateFlow("Disconnected")
+    val log: StateFlow<String> = _log
+
+    suspend fun connect(host: String, port: Int, user: String, password: String): String =
+        withContext(Dispatchers.IO) {
+            disconnect()
+            runCatching {
+                val s = jsch.getSession(user, host, port)
+                s.setPassword(password)
+                s.setConfig("StrictHostKeyChecking", "no")
+                s.connect(12_000)
+                session = s
+                _connected.value = true
+                _log.value = "Connected to $user@$host:$port"
+                _log.value
+            }.getOrElse {
+                _connected.value = false
+                _log.value = it.message ?: "SSH failed"
+                _log.value
+            }
+        }
+
+    fun disconnect() {
+        runCatching { session?.disconnect() }
+        session = null
+        _connected.value = false
+        _log.value = "Disconnected"
+    }
+
+    fun exec(command: String): String {
+        val s = session ?: return "SSH not connected."
+        if (command.isBlank()) return "Empty command."
+        return runCatching {
+            val channel = s.openChannel("exec") as ChannelExec
+            channel.setCommand(command.take(4000))
+            val err = ByteArrayOutputStream()
+            channel.setErrStream(err)
+            val out = channel.inputStream
+            channel.connect(8_000)
+            val body = out.readBytes().decodeToString().take(8000)
+            val errors = err.toString().take(2000)
+            channel.disconnect()
+            (body + if (errors.isNotBlank()) "\n$errors" else "").ifBlank { "(no output)" }
+        }.getOrElse { it.message ?: "exec failed" }
+    }
+
+    fun read(path: String): String {
+        val s = session ?: return "SSH not connected."
+        val safe = path.trim()
+        if (safe.contains("..") || !safe.startsWith("/")) return "Path must be absolute without .."
+        return runCatching {
+            val channel = s.openChannel("sftp") as ChannelSftp
+            channel.connect(8_000)
+            val text = channel.get(safe).bufferedReader().use { it.readText().take(8000) }
+            channel.disconnect()
+            text.ifBlank { "(empty file)" }
+        }.getOrElse { it.message ?: "sftp failed" }
+    }
+}

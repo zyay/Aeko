@@ -5,3 +5,5 @@
 -dontwarn kotlinx.**
 -dontwarn com.google.errorprone.annotations.**
 -dontwarn com.google.crypto.tink.**
+-keep class com.jcraft.jsch.** { *; }
+-dontwarn com.jcraft.jsch.**

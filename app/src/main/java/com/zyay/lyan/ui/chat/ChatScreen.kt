@@ -36,6 +36,8 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Computer
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Gavel
 import androidx.compose.material.icons.outlined.IosShare
 import androidx.compose.material.icons.outlined.Menu
@@ -89,7 +91,10 @@ private val suggestions = listOf(
 fun ChatScreen(
     viewModel: ChatViewModel,
     onPrivacy: () -> Unit,
-    onTerms: () -> Unit
+    onTerms: () -> Unit,
+    onModels: () -> Unit,
+    onDevices: () -> Unit,
+    onVnc: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     val listState = rememberLazyListState()
@@ -117,6 +122,18 @@ fun ChatScreen(
                     DrawerRow("New chat", Icons.Outlined.Add) {
                         viewModel.newChat()
                         scope.launch { drawer.close() }
+                    }
+                    DrawerRow("Models (Hugging Face)", Icons.Outlined.Download) {
+                        scope.launch { drawer.close() }
+                        onModels()
+                    }
+                    DrawerRow("Devices (SSH)", Icons.Outlined.Computer) {
+                        scope.launch { drawer.close() }
+                        onDevices()
+                    }
+                    DrawerRow("PC screen (VNC)", Icons.Outlined.Computer) {
+                        scope.launch { drawer.close() }
+                        onVnc()
                     }
                     DrawerRow("Sign ${if (state.account == null) "in" else "out"}", Icons.Outlined.AccountCircle) {
                         if (state.account == null) viewModel.auth.signIn(context) else viewModel.auth.signOut()
@@ -158,7 +175,7 @@ fun ChatScreen(
                 Text("Lyan", color = LyanText, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
                 Spacer(Modifier.weight(1f))
                 Text(
-                    "${"%.1f".format(state.hud.tokensPerSecond)} t/s${if (state.hud.net) " · NET" else ""}",
+                    "${"%.1f".format(state.hud.tokensPerSecond)} t/s${if (state.hud.net) " · NET" else ""}${if (state.sshLive) " · SSH" else ""}",
                     color = LyanMuted,
                     fontSize = 11.sp
                 )

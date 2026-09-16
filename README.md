@@ -1,66 +1,32 @@
 # Lyan
 
-Android-native personal AI employee. Local-first. Optional Vercel identity. Optional on-device internet tools.
+Android-native personal AI employee. Local-first. Optional Hugging Face GGUF download, SSH to your PC, noVNC screen, and OpenHands-style tools.
 
 [![CI](https://github.com/zyay/Lyan/actions/workflows/ci.yml/badge.svg)](https://github.com/zyay/Lyan/actions/workflows/ci.yml)
 
-## Install APK (always latest)
+## Install (sideload)
 
-Every green `master` build publishes a rolling GitHub Release:
+The APK is **always signed** (release keystore if present, otherwise the Android debug key).
 
-https://github.com/zyay/Lyan/releases/tag/latest
+1. Download [Lyan.apk](https://github.com/zyay/Lyan/releases/tag/latest)
+2. Settings → Apps → Special access → Install unknown apps → allow your browser
+3. Open `Lyan.apk`
 
-Download `Lyan.apk`. Allow installs from the browser.
+If Android says the file is damaged, you had an **unsigned** build. Use this latest signed file.
 
-## Web (Vercel + Auth.js)
+## Hugging Face models
 
-Root Directory on Vercel: `web`.
+Menu → **Models**. Paste a `resolve/main/*.gguf` URL (default MiniCPM Q4) and optional HF token. File lands in app storage. llama.cpp inference is not in this APK yet.
 
-```bash
-cd web
-npm install
-npm run dev
-```
+## SSH + PC screen
 
-Env (Vercel / `.env.local`):
+Menu → **Devices**: OpenSSH host/user/password, Connect, run commands.  
+Menu → **PC screen**: WebView to your noVNC URL (e.g. `http://192.168.1.10:6080/vnc.html`). PC needs VNC + websockify.
 
-- `AUTH_SECRET`
-- `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET`
-- `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`
-- `AUTH_URL` (production origin)
+## OpenHands-style tools
 
-OAuth callback: `{AUTH_URL}/api/auth/callback/github` and `.../google`.
+Turn **Online** on for live `web_search` / `http_fetch`. With SSH connected, ask Lyan to run a command or read `/path` on the PC. Agent mode can open `https://` URLs.
 
-Android Custom Tabs open `/login?android=1` then `lyan://auth`.
+## Web
 
-Composer uses official [`border-beam`](https://libraries.dev/beam). Orb is [`Shdr21`](https://github.com/zzzzshawn/orbkit).
-
-## Android
-
-- Default: on-device replies, local vault
-- Agent: copy / share / alarm intents
-- Online (opt-in): `web_search`, `http_fetch` with SSRF guards
-- Sign in: GitHub or Google via Vercel (not required to chat)
-
-```bash
-./gradlew assembleRelease
-```
-
-GitHub Actions secrets for signed rolling APK:
-
-- `LYAN_KEYSTORE_BASE64`
-- `LYAN_KEYSTORE_PASSWORD`
-- `LYAN_KEY_ALIAS`
-- `LYAN_KEY_PASSWORD`
-
-Optional: `LYAN_AUTH_URL` (defaults to `https://lyan.vercel.app`).
-
-## Legal
-
-See [PRIVACY.md](PRIVACY.md) and [TERMS.md](TERMS.md).
-
-Lyan is not affiliated with xAI or Grok.
-
-## License
-
-MIT — see [LICENSE](LICENSE).
+`cd web && npm install && npm run dev` — Vercel Auth.js, border-beam, SHDR-21.
