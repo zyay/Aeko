@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -33,13 +34,21 @@ fun OnboardingScreen(onContinue: () -> Unit, onPrivacy: () -> Unit, onTerms: () 
         modifier = Modifier
             .fillMaxSize()
             .background(LyanBlack)
+            .statusBarsPadding()
             .padding(28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        ThinkingOrb(size = 180.dp, state = OrbState.Idle)
-        Spacer(Modifier.height(32.dp))
-        Text("Lyan", color = LyanText, fontSize = 36.sp, fontWeight = FontWeight.SemiBold)
+        ThinkingOrb(size = 200.dp, state = OrbState.Idle)
+        Spacer(Modifier.height(28.dp))
+        Text("Lyan", color = LyanText, fontSize = 40.sp, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(10.dp))
+        Text(
+            "What's on your mind?",
+            color = LyanText,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Medium
+        )
         Spacer(Modifier.height(12.dp))
         Text(
             "Intelligence without surveillance.\nPower without the cloud.",
@@ -48,15 +57,15 @@ fun OnboardingScreen(onContinue: () -> Unit, onPrivacy: () -> Unit, onTerms: () 
             textAlign = TextAlign.Center,
             lineHeight = 24.sp
         )
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(20.dp))
         Text(
-            "Prompts, files, and memory stay on this phone. This build does not call a remote model. By continuing you agree to the Terms and acknowledge the Privacy Policy.",
+            "Chat and files stay on this phone. Optional Vercel sign-in is identity only. Online tools fetch public HTTPS only when you turn them on. By continuing you agree to the Terms.",
             color = LyanMuted,
             fontSize = 13.sp,
             textAlign = TextAlign.Center,
             lineHeight = 20.sp
         )
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(28.dp))
         Button(
             onClick = onContinue,
             modifier = Modifier.fillMaxWidth().height(52.dp),

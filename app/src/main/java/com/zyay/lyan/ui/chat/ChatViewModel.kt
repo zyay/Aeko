@@ -30,6 +30,7 @@ data class ChatUiState(
     val agentMode: Boolean = false,
     val autoTools: Boolean = true,
     val onlineTools: Boolean = false,
+    val codeMode: Boolean = false,
     val phase: EnginePhase = EnginePhase.Idle,
     val hud: GenerationHud = GenerationHud(),
     val vaultName: String? = null,
@@ -69,6 +70,10 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(onlineTools = !it.onlineTools) }
     }
 
+    fun toggleCode() {
+        _state.update { it.copy(codeMode = !it.codeMode) }
+    }
+
     fun attach(uri: Uri, name: String) {
         val text = VaultStore.readText(getApplication(), uri)
         _state.update {
@@ -90,14 +95,17 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 agentMode = it.agentMode,
                 autoTools = it.autoTools,
                 onlineTools = it.onlineTools,
+                codeMode = it.codeMode,
                 showHud = it.showHud,
                 account = it.account
             )
         }
     }
 
-    fun send() {
-        val prompt = _state.value.draft.trim()
+    fun send(preset: String? = null) {
+        val prompt = (preset ?: _state.value.draft).trim().let { text ->
+            if (_state.value.codeMode && !text.lowercase().contains("code")) "Code Mode. $text" else text
+        }
         if (prompt.isBlank() || _state.value.phase != EnginePhase.Idle) return
         val online = _state.value.onlineTools
         val user = ChatMessage(nextId++, prompt, true)
