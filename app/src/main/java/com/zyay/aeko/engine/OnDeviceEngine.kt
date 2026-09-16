@@ -73,7 +73,7 @@ class OnDeviceEngine(
             gguf.complete(ggufPath, user, system, {
                 acc += it
                 onDelta(it)
-            }, shouldStop)
+            }, shouldStop, brainUrl)
             return acc.ifBlank { "(empty)" }
         }
         if (brainValid && brainUrl.isNotBlank()) {

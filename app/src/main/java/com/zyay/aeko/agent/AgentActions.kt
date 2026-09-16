@@ -22,7 +22,7 @@ object AgentActions {
     fun openUrl(context: Context, url: String) {
         val intent = Intent(Intent.ACTION_VIEW, url.toUri())
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
+        runCatching { context.startActivity(intent) }
     }
 
     fun setAlarm(context: Context, message: String, hour: Int = 9, minute: Int = 0) {

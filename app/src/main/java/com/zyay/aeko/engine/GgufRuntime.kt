@@ -1,28 +1,25 @@
 package com.zyay.aeko.engine
 
 /**
- * GGUF path: load a llama.cpp JNI/prefab if the vendor shipped `libaeko_llama.so`.
- * Otherwise talk to a local llama-server OpenAI endpoint (default 127.0.0.1:8080/v1).
+ * GGUF: llama.cpp JNI is optional (drop a prefab AAR into app/libs).
+ * Default path is llama-server OpenAI /v1 on loopback, then the user's brain URL.
  * Never invent tokens.
  */
 class GgufRuntime(private val llm: LlmClient = LlmClient()) {
-    val nativeReady: Boolean = runCatching {
-        System.loadLibrary("aeko_llama")
-        nativePing()
-    }.getOrDefault(false)
+    val nativeReady: Boolean = false
 
     fun complete(
         modelPath: String,
         prompt: String,
         system: String,
         onDelta: (String) -> Unit,
-        shouldStop: () -> Boolean
+        shouldStop: () -> Boolean,
+        extraBaseUrl: String = ""
     ) {
-        if (nativeReady) {
-            nativeStream(modelPath, "$system\n\n$prompt", onDelta)
-            return
-        }
-        val urls = listOf("http://127.0.0.1:8080/v1", "http://127.0.0.1:11434/v1")
+        val urls = listOf(extraBaseUrl, "http://127.0.0.1:8080/v1", "http://127.0.0.1:11434/v1")
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
         var last: Throwable? = null
         for (url in urls) {
             val ok = runCatching {
@@ -32,13 +29,10 @@ class GgufRuntime(private val llm: LlmClient = LlmClient()) {
             last = ok.exceptionOrNull()
         }
         throw IllegalStateException(
-            "GGUF is on disk at $modelPath but llama.cpp JNI is not in this APK. " +
-                "Start llama-server --port 8080 -m <that file> (OpenAI /v1). Last: ${last?.message}"
+            "GGUF is on disk at $modelPath. JNI is not packaged. " +
+                "Start llama-server --port 8080 -m <that file>, or set brain URL to that /v1. Last: ${last?.message}"
         )
     }
-
-    private external fun nativePing(): Boolean
-    private external fun nativeStream(modelPath: String, prompt: String, cb: (String) -> Unit)
 
     companion object {
         val instance by lazy { GgufRuntime() }

@@ -39,6 +39,7 @@ export function AekoApp({ userEmail }: { userEmail: string | null }) {
   const [invite, setInvite] = useState("");
   const [title, setTitle] = useState("Signal Monitor");
   const [status, setStatus] = useState("");
+  const [durable, setDurable] = useState<boolean | null>(null);
   const [sheet, setSheet] = useState<Line | null>(null);
   const [busy, setBusy] = useState(false);
   const [goo, setGoo] = useState(false);
@@ -56,6 +57,10 @@ export function AekoApp({ userEmail }: { userEmail: string | null }) {
       setView(b?.onboarded ? "inbox" : "splash");
       setReady(true);
     });
+    fetch("/api/health")
+      .then((r) => r.json() as Promise<{ durable?: boolean; db?: string }>)
+      .then((j) => setDurable(Boolean(j.durable) || j.db === "postgres"))
+      .catch(() => setDurable(null));
   }, []);
 
   useEffect(() => {
@@ -118,7 +123,10 @@ export function AekoApp({ userEmail }: { userEmail: string | null }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, wrappedKey: wrap.wrappedKey, wrapIv: wrap.wrapIv, peerPub: JSON.stringify(pub) }),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      setStatus(`Could not create task (${res.status})`);
+      return;
+    }
     const { id } = (await res.json()) as { id: string };
     setRoomId(id);
     setRoomKey(key);
@@ -134,32 +142,45 @@ export function AekoApp({ userEmail }: { userEmail: string | null }) {
     }
     const user = (await lookup.json()) as { publicKey: string };
     const wrap = await wrapRoomKey(roomKey, JSON.parse(user.publicKey));
-    await fetch(`/api/rooms/${roomId}/members`, {
+    const memberRes = await fetch(`/api/rooms/${roomId}/members`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: invite, wrappedKey: wrap.wrappedKey, wrapIv: wrap.wrapIv, peerPub: JSON.stringify(publicJwk()) }),
     });
-    if (Notification.permission === "granted") new Notification("Aeko", { body: `New activity in ${title}` });
+    if (!memberRes.ok) {
+      setStatus(`Invite failed (${memberRes.status})`);
+      return;
+    }
+    await fetch(`/api/rooms/${roomId}/notify`, { method: "POST" });
     setInvite("");
+    setStatus(`Invited ${invite}`);
   }
 
   async function subscribePush() {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
-    const vapid = await fetch("/api/push").then((r) => r.json() as Promise<{ publicKey: string }>).catch(() => ({ publicKey: "" }));
-    if (!vapid.publicKey) return;
-    const reg = await navigator.serviceWorker.register("/aeko-sw.js");
-    const perm = await Notification.requestPermission();
-    if (perm !== "granted") return;
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapid.publicKey),
-    });
-    const json = sub.toJSON();
-    await fetch("/api/push", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys }),
-    });
+    try {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+      const vapid = await fetch("/api/push").then((r) => r.json() as Promise<{ publicKey: string }>);
+      if (!vapid.publicKey) {
+        setStatus("Web Push needs AEKO_VAPID_PUBLIC / AEKO_VAPID_PRIVATE");
+        return;
+      }
+      const reg = await navigator.serviceWorker.register("/aeko-sw.js");
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") return;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapid.publicKey),
+      });
+      const json = sub.toJSON();
+      const res = await fetch("/api/push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys }),
+      });
+      if (!res.ok) setStatus(`Push subscribe failed (${res.status})`);
+    } catch (e) {
+      setStatus(String(e));
+    }
   }
 
   async function postPlain(text: string) {
@@ -353,6 +374,10 @@ export function AekoApp({ userEmail }: { userEmail: string | null }) {
             <button className="iconbtn" type="button" onClick={() => setView("brain")}>⚙</button>
             <button className="iconbtn" type="button" onClick={() => { setTitle("New task"); createTask(); }}>+</button>
           </div>
+          {durable === false && (
+            <p className="tiny">Rooms are not durable yet. Attach Neon DATABASE_URL on Vercel so /api/health shows postgres.</p>
+          )}
+          {status && <p className="tiny">{status}</p>}
           <input className="field taskname" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Task name" />
           {(rooms.length ? rooms : [{ id: "local", title: "Signal Monitor" }]).map((r, i) => (
           <button key={r.id} className={r.id === roomId ? "taskrow on" : "taskrow"} type="button" onClick={() => setRoomId(r.id)}>

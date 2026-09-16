@@ -48,15 +48,21 @@ jobs:
       - name: Decode release keystore
         env:
           LYAN_KEYSTORE_BASE64: ${{ secrets.LYAN_KEYSTORE_BASE64 }}
+          AEKO_KEYSTORE_BASE64: ${{ secrets.AEKO_KEYSTORE_BASE64 }}
         run: |
-          if [ -n "$LYAN_KEYSTORE_BASE64" ]; then
-            echo "$LYAN_KEYSTORE_BASE64" | base64 -d > release.keystore
+          KEY="${AEKO_KEYSTORE_BASE64:-$LYAN_KEYSTORE_BASE64}"
+          if [ -n "$KEY" ]; then
+            echo "$KEY" | base64 -d > release.keystore
+            test -s release.keystore
           fi
       - name: Build release APK
         env:
           LYAN_KEYSTORE_PASSWORD: ${{ secrets.LYAN_KEYSTORE_PASSWORD }}
           LYAN_KEY_ALIAS: ${{ secrets.LYAN_KEY_ALIAS }}
           LYAN_KEY_PASSWORD: ${{ secrets.LYAN_KEY_PASSWORD }}
+          AEKO_KEYSTORE_PASSWORD: ${{ secrets.AEKO_KEYSTORE_PASSWORD }}
+          AEKO_KEY_ALIAS: ${{ secrets.AEKO_KEY_ALIAS }}
+          AEKO_KEY_PASSWORD: ${{ secrets.AEKO_KEY_PASSWORD }}
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: ./gradlew assembleRelease --no-daemon
@@ -71,6 +77,8 @@ jobs:
         run: |
           set -euo pipefail
           APK=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
+          test -n "$APK"
+          test -f "$APK"
           cp "$APK" Aeko.apk
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest Aeko.apk --title "Aeko latest" --notes "Installable APK from commit ${GITHUB_SHA}. Rolling release from current master."
