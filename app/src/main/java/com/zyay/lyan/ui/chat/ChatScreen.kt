@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.ExperimentalFoundationApi
 import com.zyay.lyan.engine.EnginePhase
 import com.zyay.lyan.ui.components.BlobAvatar
+import com.zyay.lyan.ui.components.LyanHalo
 import com.zyay.lyan.ui.theme.BlobGreen
 import com.zyay.lyan.ui.theme.LyanInk
 import com.zyay.lyan.ui.theme.LyanLine
@@ -138,9 +139,9 @@ fun ChatScreen(
                     )
                 }
             }
+            LyanHalo(modifier = Modifier.padding(16.dp).fillMaxWidth(), active = state.phase == EnginePhase.Idle, cornerRadius = 22.dp) {
             Row(
                 Modifier
-                    .padding(16.dp)
                     .clip(RoundedCornerShape(22.dp))
                     .border(1.dp, LyanLine, RoundedCornerShape(22.dp))
                     .padding(horizontal = 10.dp, vertical = 8.dp),
@@ -167,6 +168,26 @@ fun ChatScreen(
                 IconButton(onClick = { if (state.draft.isNotBlank()) viewModel.send() }) {
                     Icon(Icons.Outlined.AttachFile, null, tint = LyanMuted)
                 }
+            }
+            }
+            var invite by remember { mutableStateOf("") }
+            Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                BasicTextField(
+                    value = invite,
+                    onValueChange = { invite = it },
+                    textStyle = TextStyle(color = LyanInk, fontSize = 14.sp),
+                    modifier = Modifier.weight(1f).height(36.dp),
+                    decorationBox = { inner ->
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (invite.isEmpty()) Text("Add people (email)", color = LyanMuted, fontSize = 14.sp)
+                            inner()
+                        }
+                    }
+                )
+                Text("Invite", color = LyanInk, modifier = Modifier.clickable { viewModel.invitePerson(invite) }.padding(8.dp))
+            }
+            if (state.inviteHint.isNotBlank()) {
+                Text(state.inviteHint, color = LyanMuted, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
             }
         }
         sheet?.let { msg ->

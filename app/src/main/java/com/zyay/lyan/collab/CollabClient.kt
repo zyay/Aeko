@@ -11,10 +11,16 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import java.math.BigInteger
+import java.security.AlgorithmParameters
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
 import java.security.SecureRandom
+import java.security.interfaces.ECPublicKey
 import java.security.spec.ECGenParameterSpec
+import java.security.spec.ECParameterSpec
+import java.security.spec.ECPoint
+import java.security.spec.ECPublicKeySpec
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import javax.crypto.Cipher
@@ -37,17 +43,21 @@ class CollabClient(context: Context) {
     private val root get() = BuildConfig.AUTH_URL.trimEnd('/')
 
     fun ensureKeys() {
-        if (!prefs.getString("pub", null).isNullOrBlank()) return
+        if (!prefs.getString("jwk", null).isNullOrBlank()) return
         val gen = KeyPairGenerator.getInstance("EC")
         gen.initialize(ECGenParameterSpec("secp256r1"))
         val pair = gen.generateKeyPair()
+        val pub = pair.public as ECPublicKey
         prefs.edit()
-            .putString("pub", b64(pair.public.encoded))
+            .putString("jwk", toJwk(pub).toString())
             .putString("priv", b64(pair.private.encoded))
             .apply()
     }
 
-    fun publicB64(): String = prefs.getString("pub", "").orEmpty()
+    fun publicJwkJson(): String {
+        ensureKeys()
+        return prefs.getString("jwk", "{}").orEmpty()
+    }
 
     fun newRoomKey(): String {
         val bytes = ByteArray(32)
@@ -55,16 +65,16 @@ class CollabClient(context: Context) {
         return b64(bytes)
     }
 
-    fun wrap(roomKeyB64: String, theirPubB64: String): Pair<String, String> {
-        val shared = ecdh(theirPubB64)
+    fun wrap(roomKeyB64: String, theirPubJson: String): Pair<String, String> {
+        val shared = ecdh(theirPubJson)
         val iv = ByteArray(12).also { SecureRandom().nextBytes(it) }
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(shared, "AES"), GCMParameterSpec(128, iv))
         return b64(iv) to b64(cipher.doFinal(Base64.decode(roomKeyB64, Base64.NO_WRAP)))
     }
 
-    fun unwrap(wrapped: String, iv: String, theirPubB64: String): String {
-        val shared = ecdh(theirPubB64)
+    fun unwrap(wrapped: String, iv: String, theirPubJson: String): String {
+        val shared = ecdh(theirPubJson)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(shared, "AES"), GCMParameterSpec(128, Base64.decode(iv, Base64.NO_WRAP)))
         return b64(cipher.doFinal(Base64.decode(wrapped, Base64.NO_WRAP)))
@@ -85,7 +95,7 @@ class CollabClient(context: Context) {
 
     fun publishKey(token: String) {
         ensureKeys()
-        put("$root/api/me/keys", token, JSONObject().put("publicKey", JSONObject().put("kty", "EC").put("raw", publicB64()).toString()))
+        put("$root/api/me/keys", token, JSONObject().put("publicKey", publicJwkJson()))
     }
 
     fun rooms(token: String): JSONArray {
@@ -96,7 +106,8 @@ class CollabClient(context: Context) {
     fun createRoom(token: String, title: String): String {
         ensureKeys()
         val key = newRoomKey()
-        val wrap = wrap(key, publicB64())
+        val mine = publicJwkJson()
+        val wrap = wrap(key, mine)
         val id = post(
             "$root/api/rooms",
             token,
@@ -104,20 +115,79 @@ class CollabClient(context: Context) {
                 .put("title", title)
                 .put("wrappedKey", wrap.second)
                 .put("wrapIv", wrap.first)
-                .put("peerPub", JSONObject().put("kty", "EC").put("raw", publicB64()).toString())
+                .put("peerPub", mine)
         ).optString("id")
         prefs.edit().putString("room_$id", key).apply()
         return id
     }
 
-    private fun ecdh(theirPubB64: String): ByteArray {
+    fun invite(token: String, roomId: String, email: String) {
+        val key = prefs.getString("room_$roomId", null) ?: return
+        val lookup = get("$root/api/users?email=${java.net.URLEncoder.encode(email, "UTF-8")}", token)
+        val their = lookup.optString("publicKey")
+        if (their.isBlank()) throw IllegalStateException("not found")
+        val wrap = wrap(key, their)
+        post(
+            "$root/api/rooms/$roomId/members",
+            token,
+            JSONObject()
+                .put("email", email.trim().lowercase())
+                .put("wrappedKey", wrap.second)
+                .put("wrapIv", wrap.first)
+                .put("peerPub", publicJwkJson())
+        )
+        post("$root/api/rooms/$roomId/notify", token, JSONObject())
+    }
+
+    private fun ecdh(theirPubJson: String): ByteArray {
         val kf = KeyFactory.getInstance("EC")
         val mine = kf.generatePrivate(PKCS8EncodedKeySpec(Base64.decode(prefs.getString("priv", "")!!, Base64.NO_WRAP)))
-        val theirs = kf.generatePublic(X509EncodedKeySpec(Base64.decode(theirPubB64, Base64.NO_WRAP)))
+        val theirs = parsePublic(theirPubJson)
         val ka = KeyAgreement.getInstance("ECDH")
         ka.init(mine)
         ka.doPhase(theirs, true)
         return ka.generateSecret().copyOf(32)
+    }
+
+    private fun parsePublic(json: String): ECPublicKey {
+        val o = if (json.trim().startsWith("{")) JSONObject(json) else JSONObject().put("raw", json)
+        val kf = KeyFactory.getInstance("EC")
+        if (o.has("x") && o.has("y")) {
+            val params = AlgorithmParameters.getInstance("EC")
+            params.init(ECGenParameterSpec("secp256r1"))
+            val spec = params.getParameterSpec(ECParameterSpec::class.java)
+            val x = BigInteger(1, b64urlDecode(o.getString("x")))
+            val y = BigInteger(1, b64urlDecode(o.getString("y")))
+            return kf.generatePublic(ECPublicKeySpec(ECPoint(x, y), spec)) as ECPublicKey
+        }
+        val raw = o.optString("raw")
+        return kf.generatePublic(X509EncodedKeySpec(Base64.decode(raw, Base64.NO_WRAP))) as ECPublicKey
+    }
+
+    private fun toJwk(pub: ECPublicKey): JSONObject {
+        val p = pub.w
+        return JSONObject()
+            .put("kty", "EC")
+            .put("crv", "P-256")
+            .put("x", b64url(i32(p.affineX)))
+            .put("y", b64url(i32(p.affineY)))
+    }
+
+    private fun i32(n: BigInteger): ByteArray {
+        val raw = n.toByteArray()
+        val out = ByteArray(32)
+        val src = if (raw.size > 32) raw.copyOfRange(raw.size - 32, raw.size) else raw
+        System.arraycopy(src, 0, out, 32 - src.size, src.size)
+        return out
+    }
+
+    private fun b64url(bytes: ByteArray) =
+        Base64.encodeToString(bytes, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+
+    private fun b64urlDecode(s: String): ByteArray {
+        var t = s.replace('-', '+').replace('_', '/')
+        while (t.length % 4 != 0) t += "="
+        return Base64.decode(t, Base64.DEFAULT)
     }
 
     private fun get(url: String, token: String): JSONObject {

@@ -4,9 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { BorderBeam } from "border-beam";
 import { ThinkingOrb } from "thinking-orbs";
 import { Liquid } from "liquid-gooey";
-import { ImageGeneration } from "img-fx";
-import { VoiceBeam, useMicrophone } from "voice-beam";
-import { Strobi } from "@/mascot/strobi";
+import { useMicrophone } from "voice-beam";
+import { DynImage, DynVoice, DynStrobi } from "@/components/dyn-fx";
 import {
   decryptMessage,
   encryptMessage,
@@ -199,7 +198,7 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
       <div className="phone-shell">
         <div className="phone splash">
           <Top />
-          <ImageGeneration
+          <DynImage
             preset="pixels-organic"
             theme="light"
             images={["/agents/a.svg", "/agents/b.svg"]}
@@ -207,7 +206,7 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
             className="splash-fx"
           >
             <div className="splash-canvas" />
-          </ImageGeneration>
+          </DynImage>
           <Liquid blur={6} contrast={18} fill="#fff" shadow="0 2px 6px rgba(0,0,0,.08)" className="splash-goo">
             <Liquid.Item x={-70} y={40} transition="bouncy">
               <div className="round-orb">
@@ -226,7 +225,7 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
             </Liquid.Item>
           </Liquid>
           <div className="splash-mascot">
-            <Strobi animation="sleeping" size={180} />
+            <DynStrobi animation="sleeping" size={180} />
           </div>
           <div className="splash-copy">
             <h1>Lyan</h1>
@@ -250,7 +249,7 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
           <Top />
           <h1>Meet Your First Bot</h1>
           <div className="meet-hero">
-            <Strobi animation="idle" size={220} />
+            <DynStrobi animation="idle" size={220} />
             <h2>Signal Monitor</h2>
             <p className="sub">Watches sites, dashboards, and feeds for changes — then writes the brief.</p>
           </div>
@@ -318,7 +317,7 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
             <Top />
             <div className="thread-head">
               <button type="button" onClick={() => setRoomId(null)}>←</button>
-              <Strobi animation={busy ? "thinking" : "idle"} size={48} />
+              <DynStrobi animation={busy ? "thinking" : "idle"} size={48} />
               <strong>{current}</strong>
             </div>
             <div className="thread-body">
@@ -361,11 +360,11 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
                   )}
                 </Liquid>
               </div>
-              <VoiceBeam stream={mic.stream} processing={busy} theme="light" type="default" colorVariant="colorful">
+              <DynVoice stream={mic.stream} processing={busy} theme="light" type="default" colorVariant="colorful">
                 <BorderBeam size="md" colorVariant="colorful" strength={0.65} theme="light" active={!busy}>
                   <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`Ask ${current}`} />
                 </BorderBeam>
-              </VoiceBeam>
+              </DynVoice>
             </form>
             {userEmail && (
               <div style={{ padding: "0 16px 16px", display: "flex", gap: 8 }}>
