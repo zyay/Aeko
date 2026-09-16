@@ -7,14 +7,23 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-val LyanBlack = Color(0xFF0A0A0A)
-val LyanSurface = Color(0xFF141414)
-val LyanComposer = Color(0xFF1A1A1A)
-val LyanMuted = Color(0xFF8A8A8A)
-val LyanText = Color(0xFFF4F4F5)
-val LyanAccent = Color(0xFFC4B5FD)
-val LyanCyan = Color(0xFF67E8F9)
-val LyanChip = Color(0xFF222222)
+val LyanBlack = Color(0xFFFFFFFF)
+val LyanInk = Color(0xFF111111)
+val LyanSurface = Color(0xFFF7F7F8)
+val LyanComposer = Color(0xFFFFFFFF)
+val LyanMuted = Color(0xFF8B8B8B)
+val LyanText = Color(0xFF111111)
+val LyanAccent = Color(0xFFFB923C)
+val LyanCyan = Color(0xFF38BDF8)
+val LyanChip = Color(0xFFF4F4F5)
+val LyanLine = Color(0xFFEFEFEF)
+
+val BlobGreen = Color(0xFF22C55E)
+val BlobPink = Color(0xFFFB7185)
+val BlobPurple = Color(0xFFA78BFA)
+val BlobOrange = Color(0xFFFB923C)
+val BlobBlue = Color(0xFF38BDF8)
+val BlobTeal = Color(0xFF2DD4BF)
 
 val LyanTypography = Typography(
     bodyLarge = TextStyle(

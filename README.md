@@ -1,43 +1,40 @@
 # Lyan
 
-Personal AI employee: **your** OpenAI-compatible brain, encrypted task threads, Teams-style workspace on Android and the web.
+Highlight-style agent workspace: colorful bots, inbox of tasks, encrypted threads. Your OpenAI-compatible brain. Android + web.
 
 [![CI](https://github.com/zyay/Lyan/actions/workflows/ci.yml/badge.svg)](https://github.com/zyay/Lyan/actions/workflows/ci.yml)
 
 ## Install
 
-1. Download [Lyan.apk](https://github.com/zyay/Lyan/releases/tag/latest) (always signed)
-2. Allow unknown sources for your browser
+1. Download [Lyan.apk](https://github.com/zyay/Lyan/releases/tag/latest)
+2. Allow unknown sources
 3. Open the APK
 
-Web (PC): deploy `web/` on Vercel, or `cd web && npm install && npm run dev`.
+## Vercel (web)
 
-## Three brains (equal)
+Import `zyay/Lyan` on Vercel. **Root Directory: `web`**.
 
-During onboarding pick one:
+Environment:
 
-- **API key + base URL** — OpenAI, Groq, OpenRouter, LM Studio, Ollama, vLLM (`POST /v1/chat/completions`)
-- **Own server** — same schema, optional bearer
-- **Download GGUF** — Hugging Face file on Android (`Models`). llama.cpp JNI is not in this APK yet; use BYOK until then.
+- `AUTH_SECRET` (random 32+ chars)
+- `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET`
+- `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`
+- `AUTH_URL` = `https://<project>.vercel.app`
+- `DATABASE_URL` or `POSTGRES_URL` — Vercel Postgres / Neon (see `web/src/lib/schema.sql`)
 
-**Test** pings the endpoint. A valid key turns **Online** tools on (search/fetch/SSH as before). The key never goes to Vercel unless you set `LYAN_LLM_PROXY=1`.
+GitHub OAuth callback: `https://<project>.vercel.app/api/auth/callback/github`  
+Google: `.../api/auth/callback/google`
 
-Web calls your URL **from the browser**. Your server must allow CORS, or use a local server.
+Health: `GET /api/health`
 
-## Encrypted tasks
+Without Postgres the API falls back to a JSON file (`/tmp` on Vercel — not durable).
 
-Sign in (GitHub/Google). Create a task, invite by email (they must sign in once). Messages are AES-GCM; Vercel stores ciphertext only.
+Local: `cd web && npm install && npm run dev`
 
-Postgres schema: `web/src/lib/schema.sql` (`DATABASE_URL`). Without it, the API uses a JSON file (`web/data` locally, `/tmp` on Vercel — set Postgres for production).
+## Brains
 
-## Notifications
+API key + URL, own `/v1` server, or GGUF on Android. Test key never sent to Vercel (proxy off unless `LYAN_LLM_PROXY=1`).
 
-“New activity in task X” — no message body. Android `POST_NOTIFICATIONS`; web Notification API. Poll ~15–20s.
+## Tasks
 
-## SSH / VNC / HF
-
-Menu → Models, Devices, PC screen — unchanged.
-
-## Privacy / Terms
-
-See in-app screens or `/privacy` `/terms` on the web.
+Sign in, create a bot/task, invite by email. AES-GCM ciphertext on Vercel. Notifications have no message body.
