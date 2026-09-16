@@ -5,6 +5,8 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,6 +34,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -47,7 +51,9 @@ import com.zyay.lyan.ui.theme.BlobOrange
 import com.zyay.lyan.ui.theme.BlobPink
 import com.zyay.lyan.ui.theme.BlobPurple
 import com.zyay.lyan.ui.theme.BlobTeal
+import com.zyay.lyan.ui.theme.LyanBlack
 import com.zyay.lyan.ui.theme.LyanInk
+import com.zyay.lyan.ui.theme.LyanLine
 import com.zyay.lyan.ui.theme.LyanMuted
 import com.zyay.lyan.ui.theme.LyanText
 import kotlinx.coroutines.Dispatchers
@@ -69,9 +75,16 @@ fun OnboardingScreen(
     var key by remember { mutableStateOf(brain.apiKey) }
     var model by remember { mutableStateOf(brain.model) }
     var status by remember { mutableStateOf("") }
+    var mode by remember { mutableStateOf(brain.mode) }
     val notify = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = LyanInk,
+        unfocusedTextColor = LyanInk,
+        focusedBorderColor = LyanInk,
+        unfocusedBorderColor = LyanLine
+    )
 
-    Box(Modifier.fillMaxSize().background(Color.White).statusBarsPadding()) {
+    Box(Modifier.fillMaxSize().background(LyanBlack).statusBarsPadding()) {
         if (step == 0) {
             FloatingBlobs()
             Column(Modifier.fillMaxSize().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -105,13 +118,19 @@ fun OnboardingScreen(
             Column(Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
                 Text("Create My Own", color = LyanInk, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(12.dp))
-                Pill("API key + URL") { brain.mode = "byok"; url = "https://api.openai.com/v1" }
-                Pill("Own server") { brain.mode = "server"; url = "http://127.0.0.1:11434/v1" }
-                Pill("Download GGUF") { brain.mode = "gguf" }
-                if (brain.mode != "gguf") {
-                    OutlinedTextField(url, { url = it }, label = { Text("Base URL") }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(key, { key = it }, label = { Text("API key") }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(model, { model = it }, label = { Text("Model") }, modifier = Modifier.fillMaxWidth())
+                ModeCard("API key + URL", "OpenAI, Groq, OpenRouter, LM Studio", mode == "byok") {
+                    mode = "byok"; brain.mode = "byok"; url = "https://api.openai.com/v1"
+                }
+                ModeCard("Own server", "Any OpenAI-compatible /v1", mode == "server") {
+                    mode = "server"; brain.mode = "server"; url = "http://127.0.0.1:11434/v1"
+                }
+                ModeCard("Download GGUF", "On Android · Models", mode == "gguf") {
+                    mode = "gguf"; brain.mode = "gguf"
+                }
+                if (mode != "gguf") {
+                    OutlinedTextField(url, { url = it }, label = { Text("Base URL") }, colors = fieldColors, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(key, { key = it }, label = { Text("API key") }, colors = fieldColors, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(model, { model = it }, label = { Text("Model") }, colors = fieldColors, modifier = Modifier.fillMaxWidth())
                     Pill("Test") {
                         scope.launch {
                             status = "Testing…"
@@ -143,8 +162,24 @@ private fun Pill(label: String, onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().height(52.dp),
         shape = RoundedCornerShape(999.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White)
+        colors = ButtonDefaults.buttonColors(containerColor = LyanInk, contentColor = Color.White)
     ) { Text(label, fontWeight = FontWeight.SemiBold) }
+}
+
+@Composable
+private fun ModeCard(label: String, sub: String, on: Boolean, onClick: () -> Unit) {
+    Spacer(Modifier.height(8.dp))
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .border(1.dp, if (on) LyanInk else LyanLine, RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick)
+            .padding(14.dp)
+    ) {
+        Text(label, fontWeight = FontWeight.SemiBold, color = LyanInk)
+        Text(sub, color = LyanMuted, fontSize = 13.sp)
+    }
 }
 
 @Composable

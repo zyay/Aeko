@@ -231,10 +231,10 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
             <h1>Lyan</h1>
             <p>Your team of always-on agents that finish the work.</p>
           </div>
-          <a className="signpill" href="/login" style={{ textAlign: "center" }}>
+          <a className="signpill" href="/login">
             Sign in
           </a>
-          <button className="ghostlink" type="button" onClick={() => setView("meet")} style={{ position: "absolute", bottom: 8, left: 0, right: 0 }}>
+          <button className="ghostlink" type="button" onClick={() => setView("meet")}>
             Continue local-only
           </button>
         </div>
@@ -294,9 +294,9 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
             <button className="iconbtn" type="button" onClick={() => setView("brain")}>⚙</button>
             <button className="iconbtn" type="button" onClick={() => { setTitle("New task"); createTask(); }}>+</button>
           </div>
-          <input className="field" style={{ margin: "0 16px 8px", width: "calc(100% - 32px)" }} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Task name" />
+          <input className="field taskname" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Task name" />
           {(rooms.length ? rooms : [{ id: "local", title: "Signal Monitor" }]).map((r, i) => (
-            <button key={r.id} className="taskrow" type="button" onClick={() => setRoomId(r.id)}>
+          <button key={r.id} className={r.id === roomId ? "taskrow on" : "taskrow"} type="button" onClick={() => setRoomId(r.id)}>
               <ThinkingOrb
                 state={(["breathing", "searching", "working", "composing", "listening"] as const)[i % 5]}
                 size={64}
@@ -316,10 +316,17 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
           <section className={`thread ${!roomId && typeof window !== "undefined" && window.innerWidth <= 840 ? "hidden-mobile" : ""}`}>
             <Top />
             <div className="thread-head">
-              <button type="button" onClick={() => setRoomId(null)}>←</button>
+              <button className="iconbtn" type="button" onClick={() => setRoomId(null)}>←</button>
               <DynStrobi animation={busy ? "thinking" : "idle"} size={48} />
               <strong>{current}</strong>
             </div>
+            {members.length > 0 && (
+              <div className="people">
+                {members.map((m) => (
+                  <span key={m}>{m}</span>
+                ))}
+              </div>
+            )}
             <div className="thread-body">
               {messages.length === 0 && (
                 <p className="msg">Want me to start this task, or is this the shape of week you wanted?</p>
@@ -367,9 +374,9 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
               </DynVoice>
             </form>
             {userEmail && (
-              <div style={{ padding: "0 16px 16px", display: "flex", gap: 8 }}>
+              <div className="invitebar">
                 <input className="field" value={invite} onChange={(e) => setInvite(e.target.value)} placeholder="Add people (email)" />
-                <button className="blackpill" type="button" onClick={addPerson} style={{ padding: "10px 16px" }}>
+                <button className="blackpill" type="button" onClick={addPerson}>
                   Invite
                 </button>
               </div>
@@ -455,17 +462,17 @@ function BrainForm({
     <div className="phone-shell">
       <div className="phone meet">
         <Top />
-        <button type="button" onClick={onBack}>←</button>
+        <button className="back" type="button" onClick={onBack}>← Back</button>
         <h1>Create My Own</h1>
         <p className="sub">{userEmail ? `Signed in as ${userEmail}` : "Local brain — keys stay in this browser."}</p>
         <div className="cards">
-          <button className="cardbtn" type="button" onClick={() => setCfg({ ...cfg, mode: "byok", baseUrl: "https://api.openai.com/v1" })}>
+          <button className={cfg.mode === "byok" ? "cardbtn on" : "cardbtn"} type="button" onClick={() => setCfg({ ...cfg, mode: "byok", baseUrl: "https://api.openai.com/v1" })}>
             API key + URL<span>OpenAI, Groq, OpenRouter, LM Studio</span>
           </button>
-          <button className="cardbtn" type="button" onClick={() => setCfg({ ...cfg, mode: "server", baseUrl: "http://127.0.0.1:11434/v1" })}>
+          <button className={cfg.mode === "server" ? "cardbtn on" : "cardbtn"} type="button" onClick={() => setCfg({ ...cfg, mode: "server", baseUrl: "http://127.0.0.1:11434/v1" })}>
             Own server<span>Any OpenAI-compatible /v1</span>
           </button>
-          <button className="cardbtn" type="button" onClick={() => setCfg({ ...cfg, mode: "gguf" })}>
+          <button className={cfg.mode === "gguf" ? "cardbtn on" : "cardbtn"} type="button" onClick={() => setCfg({ ...cfg, mode: "gguf" })}>
             Download GGUF<span>On Android · Models</span>
           </button>
         </div>
