@@ -6,7 +6,7 @@ export async function GET(req: Request) {
   if (!(await requireEmail(req))) return NextResponse.json({ error: "auth" }, { status: 401 });
   const email = new URL(req.url).searchParams.get("email")?.trim().toLowerCase();
   if (!email) return NextResponse.json({ error: "email" }, { status: 400 });
-  const user = getUser(email);
+  const user = await getUser(email);
   if (!user) return NextResponse.json({ error: "not found" }, { status: 404 });
   return NextResponse.json(user);
 }

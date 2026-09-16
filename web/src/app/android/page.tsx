@@ -7,7 +7,7 @@ export default async function AndroidLinkPage() {
   if (!session?.user?.email) {
     redirect("/login?android=1");
   }
-  const token = issueToken(session.user.email);
+  const token = await issueToken(session.user.email);
   const deep = `lyan://auth?email=${encodeURIComponent(session.user.email)}&name=${encodeURIComponent(session.user.name ?? "")}&token=${encodeURIComponent(token)}`;
   return (
     <main style={{ minHeight: "100vh", background: "#0a0a0a", color: "#f4f4f5", padding: 32 }}>

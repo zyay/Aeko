@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
-import { ChatApp } from "@/components/chat-app";
+import { LyanApp } from "@/components/lyan-app";
 
 export default async function HomePage() {
   const session = await auth();
-  return <ChatApp userEmail={session?.user?.email ?? null} />;
+  return <LyanApp userEmail={session?.user?.email ?? null} />;
 }

@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Lyan",
-  description: "Intelligence without surveillance. Optional Vercel sign-in.",
+  description: "Your team of always-on agents that finish the work.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

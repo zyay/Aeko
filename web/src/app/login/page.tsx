@@ -1,6 +1,5 @@
 import { auth, signIn, signOut } from "@/auth";
 import { redirect } from "next/navigation";
-import { BeamFrame } from "@/components/beam-frame";
 
 export default async function LoginPage({
   searchParams,
@@ -13,47 +12,45 @@ export default async function LoginPage({
 
   return (
     <main className="auth">
-      <BeamFrame>
-        <div className="authcard">
-          <a href="/" style={{ color: "#a1a1aa" }}>
-            ← Back to Lyan
-          </a>
-          <h1>Sign in</h1>
-          <p>Optional GitHub or Google via Vercel Auth.js. Chats stay in this tab. Android returns through lyan://auth.</p>
-          {session?.user ? (
+      <div className="authcard">
+        <a href="/" style={{ color: "#8b8b8b" }}>
+          ← Back
+        </a>
+        <h1>Sign in</h1>
+        <p>GitHub or Google via Auth.js. Identity only — your LLM key never hits Vercel.</p>
+        {session?.user ? (
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/" });
+            }}
+          >
+            <p className="ok">Signed in as {session.user.email}</p>
+            <button type="submit">Sign out</button>
+          </form>
+        ) : (
+          <>
             <form
               action={async () => {
                 "use server";
-                await signOut({ redirectTo: "/" });
+                await signIn("github", { redirectTo: android === "1" ? "/android" : "/" });
               }}
             >
-              <p>Signed in as {session.user.email}</p>
-              <button type="submit">Sign out</button>
+              <button type="submit">Continue with GitHub</button>
             </form>
-          ) : (
-            <>
-              <form
-                action={async () => {
-                  "use server";
-                  await signIn("github", { redirectTo: android === "1" ? "/android" : "/" });
-                }}
-              >
-                <button type="submit">Continue with GitHub</button>
-              </form>
-              <form
-                action={async () => {
-                  "use server";
-                  await signIn("google", { redirectTo: android === "1" ? "/android" : "/" });
-                }}
-              >
-                <button className="alt" type="submit">
-                  Continue with Google
-                </button>
-              </form>
-            </>
-          )}
-        </div>
-      </BeamFrame>
+            <form
+              action={async () => {
+                "use server";
+                await signIn("google", { redirectTo: android === "1" ? "/android" : "/" });
+              }}
+            >
+              <button className="alt" type="submit">
+                Continue with Google
+              </button>
+            </form>
+          </>
+        )}
+      </div>
     </main>
   );
 }
