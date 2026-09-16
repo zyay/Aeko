@@ -10,10 +10,14 @@ export type BrainConfig = {
   onboarded: boolean;
 };
 
-const DEVICE = "lyan-device-key";
+const DEVICE = "aeko-device-key";
+
+function ls(name: string): string | null {
+  return localStorage.getItem(name) ?? localStorage.getItem(name.replace("aeko-", "lyan-"));
+}
 
 async function deviceKey(): Promise<CryptoKey> {
-  const raw = localStorage.getItem(DEVICE);
+  const raw = ls(DEVICE);
   if (raw) {
     const bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
     return crypto.subtle.importKey("raw", bytes, "AES-GCM", false, ["encrypt", "decrypt"]);
@@ -41,11 +45,11 @@ export async function loadSecret(blob: string): Promise<string> {
 
 export async function saveBrain(cfg: BrainConfig) {
   const copy = { ...cfg, apiKey: cfg.apiKey ? await saveSecret(cfg.apiKey) : "" };
-  localStorage.setItem("lyan-brain", JSON.stringify(copy));
+  localStorage.setItem("aeko-brain", JSON.stringify(copy));
 }
 
 export async function loadBrain(): Promise<BrainConfig | null> {
-  const raw = localStorage.getItem("lyan-brain");
+  const raw = ls("aeko-brain");
   if (!raw) return null;
   const parsed = JSON.parse(raw) as BrainConfig;
   if (parsed.apiKey) parsed.apiKey = await loadSecret(parsed.apiKey).catch(() => "");
@@ -56,18 +60,18 @@ export async function generateIdentity() {
   const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
   const pub = await crypto.subtle.exportKey("jwk", pair.publicKey);
   const priv = await crypto.subtle.exportKey("jwk", pair.privateKey);
-  localStorage.setItem("lyan-priv", await saveSecret(JSON.stringify(priv)));
-  localStorage.setItem("lyan-pub", JSON.stringify(pub));
+  localStorage.setItem("aeko-priv", await saveSecret(JSON.stringify(priv)));
+  localStorage.setItem("aeko-pub", JSON.stringify(pub));
   return pub;
 }
 
 export function publicJwk(): JsonWebKey | null {
-  const raw = localStorage.getItem("lyan-pub");
+  const raw = ls("aeko-pub");
   return raw ? (JSON.parse(raw) as JsonWebKey) : null;
 }
 
 async function privateKey(): Promise<CryptoKey> {
-  const blob = localStorage.getItem("lyan-priv");
+  const blob = ls("aeko-priv");
   if (!blob) throw new Error("no identity");
   const jwk = JSON.parse(await loadSecret(blob)) as JsonWebKey;
   return crypto.subtle.importKey("jwk", jwk, { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]);

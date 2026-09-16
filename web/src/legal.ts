@@ -1,9 +1,9 @@
-export const privacyText = `LYAN PRIVACY POLICY
+export const privacyText = `AEKO PRIVACY POLICY
 Effective: 16 September 2026
-Operator: zyay (open-source project Lyan)
+Operator: zyay (open-source project Aeko)
 
 1. Principle
-Lyan is local-first. Your LLM key and prompts go to the URL you set (OpenAI-compatible), never to Vercel by default. Optional Vercel LLM proxy is off unless you enable LYAN_LLM_PROXY.
+Aeko is local-first. Your LLM key and prompts go to the URL you set (OpenAI-compatible), never to Vercel by default. Optional Vercel LLM proxy is off unless you enable AEKO_LLM_PROXY.
 
 2. Identity
 GitHub/Google via Auth.js on Vercel. Email is used for task membership.
@@ -27,7 +27,7 @@ Strobi (@bible-strong/avatar-react) is AGPL-licensed. It runs only in the browse
 https://github.com/zyay/Lyan
 `;
 
-export const termsText = `LYAN TERMS OF USE
+export const termsText = `AEKO TERMS OF USE
 Effective: 16 September 2026
 
 1. License
@@ -46,7 +46,7 @@ SSH and Agent intents can affect devices you connect. Not professional advice.
 Install the signed APK from GitHub Releases (latest). Enable unknown sources.
 
 7. Mascot
-Strobi on the website is AGPL. The rest of Lyan is MIT.
+Strobi on the website is AGPL. The rest of Aeko is MIT.
 
 Project: https://github.com/zyay/Lyan
 `;

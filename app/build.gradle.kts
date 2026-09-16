@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.zyay.lyan"
+    namespace = "com.zyay.aeko"
     compileSdk = 35
 
     val gitSha = System.getenv("GITHUB_SHA")?.take(7) ?: "dev"
@@ -14,10 +14,10 @@ android {
     val storePass = System.getenv("LYAN_KEYSTORE_PASSWORD") ?: "lyan-release"
     val alias = System.getenv("LYAN_KEY_ALIAS") ?: "lyan"
     val keyPass = System.getenv("LYAN_KEY_PASSWORD") ?: "lyan-release"
-    val authUrl = System.getenv("LYAN_AUTH_URL") ?: "https://lyan.vercel.app"
+    val authUrl = System.getenv("AEKO_AUTH_URL") ?: System.getenv("LYAN_AUTH_URL") ?: "https://lyan.vercel.app"
 
     defaultConfig {
-        applicationId = "com.zyay.lyan"
+        applicationId = "com.zyay.aeko"
         minSdk = 26
         targetSdk = 35
         versionCode = runNumber

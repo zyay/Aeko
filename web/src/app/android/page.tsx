@@ -8,11 +8,11 @@ export default async function AndroidLinkPage() {
     redirect("/login?android=1");
   }
   const token = await issueToken(session.user.email);
-  const deep = `lyan://auth?email=${encodeURIComponent(session.user.email)}&name=${encodeURIComponent(session.user.name ?? "")}&token=${encodeURIComponent(token)}`;
+  const deep = `aeko://auth?email=${encodeURIComponent(session.user.email)}&name=${encodeURIComponent(session.user.name ?? "")}&token=${encodeURIComponent(token)}`;
   return (
     <main className="android-open">
       <div>
-      <p>Opening Lyan…</p>
+      <p>Opening Aeko…</p>
       <a href={deep}>
         Return to the Android app
       </a>

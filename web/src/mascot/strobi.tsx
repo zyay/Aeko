@@ -21,5 +21,5 @@ export function Strobi({
     avatar.current?.play(animation);
   }, [animation]);
 
-  return <StrobiAvatar ref={avatar} defaultAnimation={animation} size={size} ariaLabel="Lyan mascot" />;
+  return <StrobiAvatar ref={avatar} defaultAnimation={animation} size={size} ariaLabel="Aeko mascot" />;
 }
