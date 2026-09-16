@@ -68,13 +68,13 @@ fun InboxScreen(
         }
         LazyColumn {
             itemsIndexed(state.tasks) { i, task ->
-                val on = task == state.currentTask
+                val on = task.title == state.currentTask
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .background(if (on) AekoComposer else Color.Transparent)
                         .clickable {
-                            viewModel.selectTask(task)
+                            viewModel.selectTask(task.title)
                             onOpen()
                         }
                         .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -84,7 +84,7 @@ fun InboxScreen(
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Row {
-                            Text(task, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = AekoInk)
+                            Text(task.title, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = AekoInk)
                             Spacer(Modifier.width(8.dp))
                             Text("Task", color = AekoMuted, fontSize = 13.sp)
                         }

@@ -61,7 +61,7 @@ fun ModelsScreen(store: HfModelStore, onBack: () -> Unit) {
         }
         Text("Models", color = AekoText, fontSize = 24.sp, modifier = Modifier.padding(horizontal = 12.dp))
         Text(
-            "Download a GGUF from Hugging Face onto this phone. llama.cpp inference is not in this APK yet — the file is stored locally.",
+            "Download a GGUF from Hugging Face. Chat uses llama.cpp JNI when libaeko_llama is present, otherwise llama-server on 127.0.0.1:8080/v1. No fake GGUF replies.",
             color = AekoMuted,
             fontSize = 13.sp,
             modifier = Modifier.padding(12.dp)

@@ -8,9 +8,15 @@ import androidx.security.crypto.MasterKey
 import com.zyay.aeko.BuildConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 
 class AuthStore(context: Context) {
     private val app = context.applicationContext
+    private val http = OkHttpClient()
     private val prefs = runCatching {
         val master = MasterKey.Builder(app).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
         EncryptedSharedPreferences.create(
@@ -43,11 +49,36 @@ class AuthStore(context: Context) {
 
     fun capture(uri: Uri?) {
         if (uri == null || uri.host != "auth" || (uri.scheme != "aeko" && uri.scheme != "lyan")) return
+        val code = uri.getQueryParameter("code")
+        if (!code.isNullOrBlank()) {
+            Thread { exchange(code) }.start()
+            return
+        }
         val email = uri.getQueryParameter("email") ?: return
+        val token = uri.getQueryParameter("token").orEmpty()
+        if (token.isBlank()) return
+        save(email, uri.getQueryParameter("name").orEmpty(), token)
+    }
+
+    private fun exchange(code: String) {
+        val url = "${BuildConfig.AUTH_URL.trimEnd('/')}/api/android/claim"
+        val body = JSONObject().put("code", code).toString().toRequestBody("application/json".toMediaType())
+        val req = Request.Builder().url(url).post(body).build()
+        runCatching {
+            http.newCall(req).execute().use { res ->
+                val json = JSONObject(res.body?.string().orEmpty().ifBlank { "{}" })
+                val email = json.optString("email")
+                val token = json.optString("token")
+                if (email.isNotBlank() && token.isNotBlank()) save(email, json.optString("name"), token)
+            }
+        }
+    }
+
+    private fun save(email: String, name: String, token: String) {
         prefs.edit()
             .putString("email", email)
-            .putString("name", uri.getQueryParameter("name").orEmpty())
-            .putString("token", uri.getQueryParameter("token").orEmpty())
+            .putString("name", name)
+            .putString("token", token)
             .apply()
         _account.value = email
     }

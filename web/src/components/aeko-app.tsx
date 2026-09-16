@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { BorderBeam } from "border-beam";
 import { ThinkingOrb } from "thinking-orbs";
 import { Liquid } from "liquid-gooey";
@@ -17,9 +17,10 @@ import {
   wrapRoomKey,
   type BrainConfig,
 } from "@/lib/crypto";
-import { chatComplete } from "@/lib/llm";
+import { streamChat } from "@/lib/llm";
+import { httpFetch, webSearch } from "@/lib/web-tools";
 
-type Line = { id: string; role: "user" | "aeko"; text: string };
+type Line = { id: string; role: "user" | "aeko" | "tool"; text: string };
 type Room = { id: string; title: string };
 type View = "splash" | "meet" | "brain" | "inbox";
 
@@ -41,6 +42,11 @@ export function AekoApp({ userEmail }: { userEmail: string | null }) {
   const [sheet, setSheet] = useState<Line | null>(null);
   const [busy, setBusy] = useState(false);
   const [goo, setGoo] = useState(false);
+  const [vault, setVault] = useState("");
+  const [vaultName, setVaultName] = useState("");
+  const [codeMode, setCodeMode] = useState(false);
+  const [agentMode, setAgentMode] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
   const mic = useMicrophone();
   const wide = typeof window !== "undefined" && window.innerWidth > 840;
 
@@ -65,6 +71,11 @@ export function AekoApp({ userEmail }: { userEmail: string | null }) {
     const t = window.setInterval(() => openRoom(roomId), 15000);
     return () => window.clearInterval(t);
   }, [roomId, userEmail]);
+
+  useEffect(() => {
+    if (!userEmail) return;
+    void subscribePush();
+  }, [userEmail]);
 
   async function refreshRooms() {
     const res = await fetch("/api/rooms");
@@ -132,6 +143,25 @@ export function AekoApp({ userEmail }: { userEmail: string | null }) {
     setInvite("");
   }
 
+  async function subscribePush() {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    const vapid = await fetch("/api/push").then((r) => r.json() as Promise<{ publicKey: string }>).catch(() => ({ publicKey: "" }));
+    if (!vapid.publicKey) return;
+    const reg = await navigator.serviceWorker.register("/aeko-sw.js");
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") return;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapid.publicKey),
+    });
+    const json = sub.toJSON();
+    await fetch("/api/push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys }),
+    });
+  }
+
   async function postPlain(text: string) {
     if (!roomId || !roomKey || roomId === "local") return;
     const enc = await encryptMessage(roomKey, text);
@@ -145,33 +175,62 @@ export function AekoApp({ userEmail }: { userEmail: string | null }) {
 
   async function run(prompt: string) {
     if (!prompt || busy || !brain) return;
+    const text = codeMode && !prompt.toLowerCase().includes("code") ? `Code Mode. ${prompt}` : prompt;
     setDraft("");
-    const userLine = { id: String(Date.now()), role: "user" as const, text: prompt };
+    const userLine = { id: String(Date.now()), role: "user" as const, text };
     setMessages((m) => [...m, userLine]);
-    await postPlain(prompt);
+    await postPlain(text);
     setBusy(true);
-    let full: string;
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    const traces: string[] = [];
     try {
+      if (text.toLowerCase().includes("search") || text.toLowerCase().includes("look up")) {
+        const note = await webSearch(text).catch((e) => `web_search:\n${String(e)}`);
+        traces.push(note);
+        setMessages((m) => [...m, { id: `${Date.now()}-t`, role: "tool", text: note }]);
+      }
+      const url = text.match(/https:\/\/[^\s]+/)?.[0];
+      if (url) {
+        const note = await httpFetch(url).catch((e) => `http_fetch:\n${String(e)}`);
+        traces.push(note);
+        setMessages((m) => [...m, { id: `${Date.now()}-f`, role: "tool", text: note }]);
+      }
+      const aekoId = String(Date.now() + 1);
+      setMessages((m) => [...m, { id: aekoId, role: "aeko", text: "" }]);
+      let full = "";
+      const system = `You are Aeko, a personal employee. Be concise.${agentMode ? " Agent mode." : ""}${vault ? " Prefer the attached vault." : ""}`;
+      const user = [text, vault ? `Vault:\n${vault.slice(0, 4000)}` : "", traces.length ? `Tool results:\n${traces.join("\n\n")}` : ""]
+        .filter(Boolean)
+        .join("\n\n");
       if (brain.valid && brain.baseUrl) {
-        full = await chatComplete({
+        full = await streamChat({
           baseUrl: brain.baseUrl,
           apiKey: brain.apiKey,
           model: brain.model,
           messages: [
-            { role: "system", content: "You are Aeko, a personal employee. Be concise and useful." },
-            { role: "user", content: prompt },
+            { role: "system", content: system },
+            { role: "user", content: user },
           ],
+          signal: ctrl.signal,
+          onDelta: (chunk) => {
+            setMessages((m) => m.map((line) => (line.id === aekoId ? { ...line, text: line.text + chunk } : line)));
+          },
         });
       } else if (brain.mode === "gguf") {
         full = "GGUF lives on Android (Models). On the web, add a BYOK URL.";
+        setMessages((m) => m.map((line) => (line.id === aekoId ? { ...line, text: full } : line)));
       } else {
         full = "Add a valid API key in Create My Own, or start a local OpenAI-compatible server.";
+        setMessages((m) => m.map((line) => (line.id === aekoId ? { ...line, text: full } : line)));
       }
+      await postPlain(full);
     } catch (e) {
-      full = String(e);
+      const err = String(e);
+      setMessages((m) => [...m, { id: String(Date.now() + 2), role: "aeko", text: err }]);
+      await postPlain(err);
     }
-    setMessages((m) => [...m, { id: String(Date.now() + 1), role: "aeko", text: full }]);
-    await postPlain(full);
+    abortRef.current = null;
     setBusy(false);
   }
 
@@ -319,7 +378,23 @@ export function AekoApp({ userEmail }: { userEmail: string | null }) {
               <button className="iconbtn" type="button" onClick={() => setRoomId(null)}>←</button>
               <DynStrobi animation={busy ? "thinking" : "idle"} size={48} />
               <strong>{current}</strong>
+              {busy && (
+                <button className="ghostlink" type="button" onClick={() => abortRef.current?.abort()}>
+                  Stop
+                </button>
+              )}
             </div>
+            {(vaultName || codeMode || agentMode) && (
+              <div className="people">
+                {vaultName ? <span>Vault · {vaultName}</span> : null}
+                <button type="button" className="chip" onClick={() => setCodeMode((v) => !v)}>
+                  {codeMode ? "Code on" : "Code"}
+                </button>
+                <button type="button" className="chip" onClick={() => setAgentMode((v) => !v)}>
+                  {agentMode ? "Agent on" : "Agent"}
+                </button>
+              </div>
+            )}
             {members.length > 0 && (
               <div className="people">
                 {members.map((m) => (
@@ -332,7 +407,7 @@ export function AekoApp({ userEmail }: { userEmail: string | null }) {
                 <p className="msg">Want me to start this task, or is this the shape of week you wanted?</p>
               )}
               {messages.map((m) => (
-                <p key={m.id} className={m.role === "user" ? "msg user" : "msg"} onContextMenu={(e) => { e.preventDefault(); setSheet(m); }}>
+                <p key={m.id} className={m.role === "user" ? "msg user" : m.role === "tool" ? "msg tool" : "msg"} onContextMenu={(e) => { e.preventDefault(); setSheet(m); }}>
                   {m.text}
                 </p>
               ))}
@@ -359,14 +434,32 @@ export function AekoApp({ userEmail }: { userEmail: string | null }) {
                     </button>
                   </Liquid.Item>
                   {goo && (
+                    <>
                     <Liquid.Item x={0} y={-44} transition="bouncy">
                       <button className="plus" type="button" onClick={() => void mic.start()}>
                         mic
                       </button>
                     </Liquid.Item>
+                    <Liquid.Item x={0} y={-88} transition="bouncy">
+                      <button className="plus" type="button" onClick={() => document.getElementById("vault-file")?.click()}>
+                        file
+                      </button>
+                    </Liquid.Item>
+                    </>
                   )}
                 </Liquid>
               </div>
+              <input
+                id="vault-file"
+                type="file"
+                hidden
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setVaultName(file.name);
+                  setVault(await file.text());
+                }}
+              />
               <DynVoice stream={mic.stream} processing={busy} theme="light" type="default" colorVariant="colorful">
                 <BorderBeam size="md" colorVariant="colorful" strength={0.65} theme="light" active={!busy}>
                   <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`Ask ${current}`} />
@@ -505,7 +598,21 @@ function BrainForm({
         <button className="blackpill" type="button" onClick={() => onDone(cfg)}>
           Open workspace
         </button>
+        {userEmail && (
+          <a className="ghostlink" href="/api/auth/signout">
+            Sign out
+          </a>
+        )}
       </div>
     </div>
   );
+}
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
 }

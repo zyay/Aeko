@@ -26,6 +26,7 @@ import com.zyay.aeko.ui.devices.VncScreen
 import com.zyay.aeko.ui.legal.LegalScreen
 import com.zyay.aeko.ui.models.ModelsScreen
 import com.zyay.aeko.ui.onboarding.OnboardingScreen
+import com.zyay.aeko.ui.settings.SettingsScreen
 import com.zyay.aeko.ui.theme.AekoBlack
 import com.zyay.aeko.ui.theme.AekoInk
 import com.zyay.aeko.ui.theme.AekoTypography
@@ -66,7 +67,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class AekoRoute { Onboarding, Inbox, Chat, Privacy, Terms, Models, Devices, Vnc }
+private enum class AekoRoute { Onboarding, Inbox, Chat, Privacy, Terms, Models, Devices, Vnc, Settings }
 
 @Composable
 private fun AekoRoot(viewModel: ChatViewModel) {
@@ -89,7 +90,7 @@ private fun AekoRoot(viewModel: ChatViewModel) {
         AekoRoute.Inbox -> InboxScreen(
             viewModel = viewModel,
             onOpen = { route = AekoRoute.Chat },
-            onSettings = { from = AekoRoute.Inbox; route = AekoRoute.Models },
+            onSettings = { from = AekoRoute.Inbox; route = AekoRoute.Settings },
             onDevices = { from = AekoRoute.Inbox; route = AekoRoute.Devices }
         )
         AekoRoute.Chat -> ChatScreen(
@@ -99,6 +100,12 @@ private fun AekoRoot(viewModel: ChatViewModel) {
         )
         AekoRoute.Privacy -> LegalScreen("Privacy Policy", LegalCopy.privacy) { route = from }
         AekoRoute.Terms -> LegalScreen("Terms of Use", LegalCopy.terms) { route = from }
+        AekoRoute.Settings -> SettingsScreen(
+            viewModel = viewModel,
+            onBack = { route = from },
+            onModels = { from = AekoRoute.Settings; route = AekoRoute.Models },
+            onSignIn = {}
+        )
         AekoRoute.Models -> ModelsScreen(viewModel.models) { route = from }
         AekoRoute.Devices -> DevicesScreen(
             store = viewModel.devices,

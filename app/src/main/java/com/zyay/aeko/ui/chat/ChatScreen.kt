@@ -92,6 +92,14 @@ fun ChatScreen(
                 Text(state.currentTask, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = AekoInk, modifier = Modifier.weight(1f))
                 IconButton(onClick = onModels) { Text("···", color = AekoInk) }
             }
+            if (state.vaultName != null) {
+                Text(
+                    "Vault · ${state.vaultName}",
+                    color = AekoMuted,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp).clip(RoundedCornerShape(999.dp)).background(AekoChip).padding(horizontal = 10.dp, vertical = 4.dp)
+                )
+            }
             if (state.members.isNotEmpty()) {
                 Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     state.members.forEach { email ->
@@ -122,8 +130,8 @@ fun ChatScreen(
                         items(state.messages, key = { it.id }) { msg ->
                             Text(
                                 msg.text,
-                                color = AekoInk,
-                                fontSize = 16.sp,
+                                color = if (msg.kind == "tool") AekoMuted else AekoInk,
+                                fontSize = if (msg.kind == "tool") 13.sp else 16.sp,
                                 lineHeight = 24.sp,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -180,7 +188,10 @@ fun ChatScreen(
                         }
                     }
                 )
-                IconButton(onClick = { if (state.draft.isNotBlank()) viewModel.send() }) {
+                IconButton(onClick = {
+                    if (state.phase != EnginePhase.Idle) viewModel.stop()
+                    else if (state.draft.isNotBlank()) viewModel.send()
+                }) {
                     Icon(Icons.Outlined.AttachFile, null, tint = AekoMuted)
                 }
             }
@@ -222,6 +233,13 @@ fun ChatScreen(
             }
             if (state.inviteHint.isNotBlank()) {
                 Text(state.inviteHint, color = AekoMuted, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+            }
+            if (state.phase != EnginePhase.Idle) {
+                Text(
+                    "Stop",
+                    color = AekoInk,
+                    modifier = Modifier.padding(16.dp).clickable { viewModel.stop() }
+                )
             }
         }
         sheet?.let { msg ->

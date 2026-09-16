@@ -116,6 +116,7 @@ a { color: inherit; text-decoration: none; }
 .people span { font-size: 11px; background: var(--chip); border-radius: 999px; padding: 4px 8px; color: var(--muted); }
 .thread-body { flex: 1; overflow: auto; padding: 18px 20px 8px; }
 .msg { color: #1c1c1c; font-size: 16px; line-height: 1.55; margin: 0 0 16px; white-space: pre-wrap; }
+.msg.tool { color: #6b6b6b; font-size: 13px; }
 .msg.user { background: var(--bubble); border-radius: 20px 20px 8px 20px; padding: 12px 14px; margin-left: 40px; }
 .chips { display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 12px; }
 .chip {

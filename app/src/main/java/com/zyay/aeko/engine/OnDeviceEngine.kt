@@ -16,7 +16,8 @@ enum class EnginePhase { Idle, Thinking, Speaking }
 class OnDeviceEngine(
     private val tools: OnlineTools = OnlineTools(),
     private val ssh: SshClient? = null,
-    private val llm: LlmClient = LlmClient()
+    private val llm: LlmClient = LlmClient(),
+    private val gguf: GgufRuntime = GgufRuntime.instance
 ) {
     fun reply(
         prompt: String,
@@ -27,14 +28,22 @@ class OnDeviceEngine(
         brainUrl: String = "",
         brainKey: String = "",
         brainModel: String = "",
-        brainValid: Boolean = false
+        brainValid: Boolean = false,
+        brainMode: String = "byok",
+        ggufPath: String? = null,
+        onTrace: (String) -> Unit = {},
+        onDelta: (String) -> Unit = {},
+        shouldStop: () -> Boolean = { false }
     ): String {
         val notes = mutableListOf<String>()
         if (onlineEnabled || (ssh?.connected?.value == true && wantsSsh(prompt))) {
             var leftover = prompt
             for (round in 0 until 5) {
+                if (shouldStop()) return ""
                 val call = nextTool(leftover, notes.size, onlineEnabled) ?: break
-                notes += execute(call)
+                val result = execute(call)
+                notes += result
+                onTrace(result.take(1200))
                 leftover = ""
             }
         }
@@ -44,17 +53,42 @@ class OnDeviceEngine(
         } else ""
         val netBlock = if (notes.isNotEmpty()) "\n\nOpenHands-style tools:\n" + notes.joinToString("\n\n") else ""
         val lower = prompt.lowercase()
-        if (brainValid && brainUrl.isNotBlank()) {
-            val system = "You are Aeko. Use tool notes if present. ${if (agentEnabled) "Agent." else ""}"
-            val user = buildString {
-                append(prompt)
-                if (vault.isNotBlank()) append("\n\nVault:\n").append(vault.take(4000))
-                if (notes.isNotEmpty()) append("\n\nTool results:\n").append(notes.joinToString("\n\n"))
-            }
-            return runCatching { llm.chat(brainUrl, brainKey, brainModel, user, system) }
-                .getOrElse { "LLM error: ${it.message}" }
+        val system = buildString {
+            append("You are Aeko, a personal employee. Be concise and useful.")
+            if (agentEnabled) append(" Agent mode is on.")
+            if (vault.isNotBlank()) append(" The user attached a local vault; prefer it.")
         }
-        val brain = if (modelReady) "GGUF on disk (download complete; llama.cpp runtime next)." else "No GGUF yet — open Models to download from Hugging Face."
+        val user = buildString {
+            append(prompt)
+            if (vault.isNotBlank()) append("\n\nVault:\n").append(vault.take(4000))
+            if (notes.isNotEmpty()) append("\n\nTool results:\n").append(notes.joinToString("\n\n"))
+        }
+        if (brainMode == "gguf") {
+            if (ggufPath.isNullOrBlank()) {
+                val msg = "No GGUF on disk. Open Models and download, or switch brain mode to API/server."
+                onDelta(msg)
+                return msg
+            }
+            var acc = ""
+            gguf.complete(ggufPath, user, system, {
+                acc += it
+                onDelta(it)
+            }, shouldStop)
+            return acc.ifBlank { "(empty)" }
+        }
+        if (brainValid && brainUrl.isNotBlank()) {
+            var acc = ""
+            llm.stream(brainUrl, brainKey, brainModel, user, system, {
+                acc += it
+                onDelta(it)
+            }, shouldStop)
+            return acc.ifBlank { "(empty)" }
+        }
+        val brain = if (modelReady) {
+            "GGUF file is on disk. Set brain mode to GGUF and run llama-server on :8080, or use API/server."
+        } else {
+            "No GGUF yet — open Models to download from Hugging Face."
+        }
         val body = when {
             !onlineEnabled && wantsWeb(lower) && !wantsSsh(prompt) ->
                 "Online tools are off. Turn on Online to search/fetch HTTPS from this phone."
@@ -68,7 +102,9 @@ class OnDeviceEngine(
             else ->
                 "Aeko, on-device.\n\nYou said: \"$prompt\"\n\n$brain\nOnline = search/fetch. Devices = SSH exec/read on your PC. PC screen = noVNC."
         }
-        return body + cited + netBlock
+        val out = body + cited + netBlock
+        onDelta(out)
+        return out
     }
 
     private fun wantsWeb(lower: String) =

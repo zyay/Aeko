@@ -7,6 +7,7 @@ export async function GET() {
     ok: true,
     db,
     store: db,
+    durable: db === "postgres",
     auth: Boolean(process.env.AUTH_SECRET),
   });
 }
