@@ -9,6 +9,9 @@ import com.zyay.lyan.engine.EnginePhase
 import com.zyay.lyan.engine.GenerationHud
 import com.zyay.lyan.engine.OnDeviceEngine
 import com.zyay.lyan.memory.VaultStore
+import com.zyay.lyan.models.HfModelStore
+import com.zyay.lyan.remote.DeviceStore
+import com.zyay.lyan.remote.SshClient
 import com.zyay.lyan.ui.components.OrbState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -36,21 +39,32 @@ data class ChatUiState(
     val vaultName: String? = null,
     val vaultText: String = "",
     val showHud: Boolean = true,
-    val account: String? = null
+    val account: String? = null,
+    val sshLive: Boolean = false,
+    val modelReady: Boolean = false
 )
 
 class ChatViewModel(app: Application) : AndroidViewModel(app) {
-    private val engine = OnDeviceEngine()
     val auth = AuthStore(app)
-    private val _state = MutableStateFlow(ChatUiState(account = auth.account.value))
+    val models = HfModelStore(app)
+    val devices = DeviceStore(app)
+    val ssh = SshClient()
+    private val engine = OnDeviceEngine(ssh = ssh)
+    private val _state = MutableStateFlow(
+        ChatUiState(account = auth.account.value, modelReady = models.current().ready)
+    )
     val state: StateFlow<ChatUiState> = _state
     private var nextId = 1L
 
     init {
         viewModelScope.launch {
-            auth.account.collect { email ->
-                _state.update { it.copy(account = email) }
-            }
+            auth.account.collect { email -> _state.update { it.copy(account = email) } }
+        }
+        viewModelScope.launch {
+            ssh.connected.collect { live -> _state.update { it.copy(sshLive = live) } }
+        }
+        viewModelScope.launch {
+            models.status.collect { st -> _state.update { it.copy(modelReady = st.ready) } }
         }
     }
 
@@ -97,7 +111,9 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 onlineTools = it.onlineTools,
                 codeMode = it.codeMode,
                 showHud = it.showHud,
-                account = it.account
+                account = it.account,
+                sshLive = it.sshLive,
+                modelReady = it.modelReady
             )
         }
     }
@@ -108,19 +124,32 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         }
         if (prompt.isBlank() || _state.value.phase != EnginePhase.Idle) return
         val online = _state.value.onlineTools
+        val sshLive = _state.value.sshLive
         val user = ChatMessage(nextId++, prompt, true)
         _state.update {
             it.copy(
                 messages = it.messages + user,
                 draft = "",
                 phase = EnginePhase.Thinking,
-                hud = GenerationHud(0f, if (online) "Local+NET" else "NPU/CPU local", net = online)
+                hud = GenerationHud(0f, if (online) "Local+NET" else "On-device", net = online, ssh = sshLive)
             )
         }
         viewModelScope.launch {
             delay(200)
+            if (_state.value.agentMode) {
+                val open = Regex("https://[^\\s]+").find(prompt)?.value
+                if (open != null) {
+                    com.zyay.lyan.agent.AgentActions.openUrl(getApplication(), open)
+                }
+            }
             val full = withContext(Dispatchers.IO) {
-                engine.reply(prompt, _state.value.vaultText, _state.value.agentMode, online)
+                engine.reply(
+                    prompt,
+                    _state.value.vaultText,
+                    _state.value.agentMode,
+                    online,
+                    models.current().ready
+                )
             }
             _state.update { it.copy(phase = EnginePhase.Speaking) }
             val id = nextId++
@@ -135,7 +164,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 val snapshot = built
                 _state.update { ui ->
                     ui.copy(
-                        hud = GenerationHud(tps, if (online) "Local+NET" else "On-device", net = online),
+                        hud = GenerationHud(tps, if (online) "Local+NET" else "On-device", net = online, ssh = sshLive),
                         messages = ui.messages.map { msg ->
                             if (msg.id == id) msg.copy(text = snapshot) else msg
                         }

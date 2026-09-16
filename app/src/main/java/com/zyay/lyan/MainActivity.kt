@@ -12,15 +12,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.zyay.lyan.legal.LegalCopy
 import com.zyay.lyan.ui.chat.ChatScreen
 import com.zyay.lyan.ui.chat.ChatViewModel
+import com.zyay.lyan.ui.devices.DevicesScreen
+import com.zyay.lyan.ui.devices.VncScreen
 import com.zyay.lyan.ui.legal.LegalScreen
+import com.zyay.lyan.ui.models.ModelsScreen
 import com.zyay.lyan.ui.onboarding.OnboardingScreen
 import com.zyay.lyan.ui.theme.LyanBlack
 import com.zyay.lyan.ui.theme.LyanTypography
@@ -61,7 +64,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class LyanRoute { Onboarding, Chat, Privacy, Terms }
+private enum class LyanRoute { Onboarding, Chat, Privacy, Terms, Models, Devices, Vnc }
 
 @Composable
 private fun LyanRoot(viewModel: ChatViewModel) {
@@ -81,9 +84,20 @@ private fun LyanRoot(viewModel: ChatViewModel) {
         LyanRoute.Chat -> ChatScreen(
             viewModel = viewModel,
             onPrivacy = { from = LyanRoute.Chat; route = LyanRoute.Privacy },
-            onTerms = { from = LyanRoute.Chat; route = LyanRoute.Terms }
+            onTerms = { from = LyanRoute.Chat; route = LyanRoute.Terms },
+            onModels = { from = LyanRoute.Chat; route = LyanRoute.Models },
+            onDevices = { from = LyanRoute.Chat; route = LyanRoute.Devices },
+            onVnc = { from = LyanRoute.Chat; route = LyanRoute.Vnc }
         )
         LyanRoute.Privacy -> LegalScreen("Privacy Policy", LegalCopy.privacy) { route = from }
         LyanRoute.Terms -> LegalScreen("Terms of Use", LegalCopy.terms) { route = from }
+        LyanRoute.Models -> ModelsScreen(viewModel.models) { route = LyanRoute.Chat }
+        LyanRoute.Devices -> DevicesScreen(
+            store = viewModel.devices,
+            ssh = viewModel.ssh,
+            onBack = { route = LyanRoute.Chat },
+            onVnc = { from = LyanRoute.Devices; route = LyanRoute.Vnc }
+        )
+        LyanRoute.Vnc -> VncScreen(viewModel.devices) { route = from }
     }
 }

@@ -3,51 +3,41 @@ package com.zyay.lyan.legal
 object LegalCopy {
     const val privacy = """
 LYAN PRIVACY POLICY
-Effective: 15 September 2026
+Effective: 16 September 2026
 Operator: zyay (open-source project Lyan)
 
 1. Principle
-Lyan is local-first. Chat prompts, attachments, vault indexes, and conversation history are processed and stored on your Android device or in the browser tab. Lyan does not operate a cloud inference API and does not sell personal data.
+Lyan is local-first. Chat and vault stay on this device. No cloud inference API.
 
 2. Optional Vercel sign-in
-If you sign in, GitHub or Google OAuth runs through the Lyan Vercel app (Auth.js). A session cookie (web) or encrypted prefs (Android, email/name only) identify you. Chat transcripts are not uploaded in this release.
+GitHub/Google via Auth.js. Identity only.
 
-3. Optional Online tools (Android)
-Offline is default. When Online is on, this device may HTTPS web_search (DuckDuckGo HTML) and http_fetch public pages. Localhost and private IPs are blocked. Disable Online and no tool HTTP runs.
+3. Optional Hugging Face downloads
+When you tap Download GGUF, this phone fetches a model file from huggingface.co over HTTPS. An optional HF token is stored on device. The GGUF is not uploaded back.
 
-4. Permissions
-• INTERNET: OAuth and Online tools
-• Storage / SAF: files you pick
-• Clipboard / Intents: Agent Mode
-No Accessibility Service in this build.
+4. Optional Online tools
+web_search and http_fetch run from the phone when Online is on. Private IPs are blocked for fetch.
 
-5. Children
-Not directed at children under 13.
+5. Optional SSH and noVNC
+You enter PC host credentials. Commands and SFTP run to that host. noVNC loads a URL you set (often LAN HTTP). You are responsible for securing that PC.
 
-6. Contact
+6. Permissions
+INTERNET for HF, tools, SSH, VNC, OAuth. SAF for vault files.
+
+7. Contact
 https://github.com/zyay/Lyan
 """
 
     const val terms = """
 LYAN TERMS OF USE
-Effective: 15 September 2026
+Effective: 16 September 2026
 
-1. License
-Open-source APK and web app, provided "as is" without warranty.
+Install the signed APK from GitHub Releases (latest). Enable unknown sources.
 
-2. Not professional advice
-Outputs can be wrong. Not legal, medical, or financial advice.
+Hugging Face downloads, SSH, and VNC are opt-in. Remote command execution can harm the PC you connect to. Outputs are not professional advice.
 
-3. Agent Mode and Online tools
-Agent Mode may fire intents you request. Online tools fetch public HTTPS pages from the phone. You remain responsible.
+OpenHands-style tools are a local registry (search, fetch, ssh_exec/read, open_url), not the Python OpenHands runtime.
 
-4. Sign-in
-Optional GitHub/Google via Vercel.
-
-5. Limitation of liability
-To the maximum extent permitted by law, authors are not liable for damages arising from use of Lyan.
-
-6. Project
-https://github.com/zyay/Lyan
+MIT, as-is. https://github.com/zyay/Lyan
 """
 }

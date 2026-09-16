@@ -1,5 +1,3 @@
 # Terms of Use
 
-Lyan is provided as-is. Outputs are not professional advice. Agent Mode may fire Android intents. Online tools (opt-in) fetch public HTTPS pages. Optional sign-in uses Vercel Auth.js.
-
-Full terms are in the app and at `/terms` on the web UI.
+Sideload the signed APK from GitHub Releases. Opt-in SSH can execute commands on your PC. Provided as-is. Full terms in the app.
