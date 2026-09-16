@@ -10,11 +10,13 @@ export default async function AndroidLinkPage() {
   const token = await issueToken(session.user.email);
   const deep = `lyan://auth?email=${encodeURIComponent(session.user.email)}&name=${encodeURIComponent(session.user.name ?? "")}&token=${encodeURIComponent(token)}`;
   return (
-    <main style={{ minHeight: "100vh", background: "#0a0a0a", color: "#f4f4f5", padding: 32 }}>
+    <main className="android-open">
+      <div>
       <p>Opening Lyan…</p>
-      <a href={deep} style={{ color: "#c4b5fd" }}>
+      <a href={deep}>
         Return to the Android app
       </a>
+      </div>
       <script
         dangerouslySetInnerHTML={{
           __html: `window.location.replace(${JSON.stringify(deep)});`,

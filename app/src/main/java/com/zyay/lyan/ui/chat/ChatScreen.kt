@@ -55,6 +55,8 @@ import com.zyay.lyan.engine.EnginePhase
 import com.zyay.lyan.ui.components.BlobAvatar
 import com.zyay.lyan.ui.components.LyanHalo
 import com.zyay.lyan.ui.theme.BlobGreen
+import com.zyay.lyan.ui.theme.LyanChip
+import com.zyay.lyan.ui.theme.LyanComposer
 import com.zyay.lyan.ui.theme.LyanInk
 import com.zyay.lyan.ui.theme.LyanLine
 import com.zyay.lyan.ui.theme.LyanMuted
@@ -80,7 +82,7 @@ fun ChatScreen(
         if (state.messages.isNotEmpty()) listState.animateScrollToItem(state.messages.lastIndex)
     }
 
-    Box(Modifier.fillMaxSize().background(Color.White).statusBarsPadding().navigationBarsPadding().imePadding()) {
+    Box(Modifier.fillMaxSize().background(LyanComposer).statusBarsPadding().navigationBarsPadding().imePadding()) {
         Column(Modifier.fillMaxSize()) {
             Text("Highlight", color = LyanMuted, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -89,6 +91,18 @@ fun ChatScreen(
                 Spacer(Modifier.width(8.dp))
                 Text(state.currentTask, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = LyanInk, modifier = Modifier.weight(1f))
                 IconButton(onClick = onModels) { Text("···", color = LyanInk) }
+            }
+            if (state.members.isNotEmpty()) {
+                Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    state.members.forEach { email ->
+                        Text(
+                            email,
+                            color = LyanMuted,
+                            fontSize = 11.sp,
+                            modifier = Modifier.clip(RoundedCornerShape(999.dp)).background(LyanChip).padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
             }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 if (state.messages.isEmpty()) {
@@ -143,6 +157,7 @@ fun ChatScreen(
             Row(
                 Modifier
                     .clip(RoundedCornerShape(22.dp))
+                    .background(LyanComposer)
                     .border(1.dp, LyanLine, RoundedCornerShape(22.dp))
                     .padding(horizontal = 10.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -171,12 +186,21 @@ fun ChatScreen(
             }
             }
             var invite by remember { mutableStateOf("") }
-            Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 BasicTextField(
                     value = invite,
                     onValueChange = { invite = it },
                     textStyle = TextStyle(color = LyanInk, fontSize = 14.sp),
-                    modifier = Modifier.weight(1f).height(36.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(40.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(LyanComposer)
+                        .border(1.dp, LyanLine, RoundedCornerShape(16.dp))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
                     decorationBox = { inner ->
                         Box(contentAlignment = Alignment.CenterStart) {
                             if (invite.isEmpty()) Text("Add people (email)", color = LyanMuted, fontSize = 14.sp)
@@ -184,19 +208,29 @@ fun ChatScreen(
                         }
                     }
                 )
-                Text("Invite", color = LyanInk, modifier = Modifier.clickable { viewModel.invitePerson(invite) }.padding(8.dp))
+                Text(
+                    "Invite",
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(LyanInk)
+                        .clickable { viewModel.invitePerson(invite) }
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                )
             }
             if (state.inviteHint.isNotBlank()) {
                 Text(state.inviteHint, color = LyanMuted, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
             }
         }
         sheet?.let { msg ->
-            Box(Modifier.fillMaxSize().background(Color(0x29000000)).clickable { sheet = null }, contentAlignment = Alignment.BottomCenter) {
+            Box(Modifier.fillMaxSize().background(Color(0x48000000)).clickable { sheet = null }, contentAlignment = Alignment.BottomCenter) {
                 Column(
                     Modifier
                         .padding(12.dp)
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(Color.White)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(LyanComposer)
                         .padding(10.dp)
                         .clickable(enabled = false) {}
                 ) {

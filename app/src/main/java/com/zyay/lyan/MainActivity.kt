@@ -17,7 +17,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import com.zyay.lyan.legal.LegalCopy
 import com.zyay.lyan.ui.chat.ChatScreen
 import com.zyay.lyan.ui.chat.ChatViewModel
@@ -27,6 +26,8 @@ import com.zyay.lyan.ui.devices.VncScreen
 import com.zyay.lyan.ui.legal.LegalScreen
 import com.zyay.lyan.ui.models.ModelsScreen
 import com.zyay.lyan.ui.onboarding.OnboardingScreen
+import com.zyay.lyan.ui.theme.LyanBlack
+import com.zyay.lyan.ui.theme.LyanInk
 import com.zyay.lyan.ui.theme.LyanTypography
 
 class MainActivity : ComponentActivity() {
@@ -39,10 +40,10 @@ class MainActivity : ComponentActivity() {
         ingestAuth(intent)
         setContent {
             MaterialTheme(
-                colorScheme = lightColorScheme(background = Color.White, surface = Color.White, onBackground = Color.Black),
+                colorScheme = lightColorScheme(background = LyanBlack, surface = LyanBlack, onBackground = LyanInk),
                 typography = LyanTypography
             ) {
-                Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
+                Surface(modifier = Modifier.fillMaxSize(), color = LyanBlack) {
                     LyanRoot(chatViewModel)
                 }
             }

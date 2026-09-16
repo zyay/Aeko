@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zyay.lyan.models.HfModelStore
 import com.zyay.lyan.ui.theme.LyanBlack
+import com.zyay.lyan.ui.theme.LyanInk
+import com.zyay.lyan.ui.theme.LyanLine
 import com.zyay.lyan.ui.theme.LyanMuted
 import com.zyay.lyan.ui.theme.LyanText
 import kotlinx.coroutines.launch
@@ -48,8 +50,8 @@ fun ModelsScreen(store: HfModelStore, onBack: () -> Unit) {
     val colors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = LyanText,
         unfocusedTextColor = LyanText,
-        focusedBorderColor = Color(0xFF3F3F46),
-        unfocusedBorderColor = Color(0xFF27272A)
+        focusedBorderColor = LyanInk,
+        unfocusedBorderColor = LyanLine
     )
     Column(
         Modifier.fillMaxSize().background(LyanBlack).statusBarsPadding().padding(12.dp).verticalScroll(rememberScrollState())
@@ -92,7 +94,7 @@ fun ModelsScreen(store: HfModelStore, onBack: () -> Unit) {
             enabled = !status.downloading,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).height(48.dp),
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+            colors = ButtonDefaults.buttonColors(containerColor = LyanInk, contentColor = Color.White)
         ) { Text("Download GGUF") }
         TextButton(onClick = { store.cancel() }, modifier = Modifier.padding(horizontal = 8.dp)) {
             Text("Cancel", color = LyanText)

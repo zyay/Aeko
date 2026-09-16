@@ -15,7 +15,7 @@ export default async function LoginPage({
     <main className="auth">
       <BeamFrame>
       <div className="authcard">
-        <a href="/" style={{ color: "#8b8b8b" }}>
+        <a href="/" className="back">
           ← Back
         </a>
         <h1>Sign in</h1>

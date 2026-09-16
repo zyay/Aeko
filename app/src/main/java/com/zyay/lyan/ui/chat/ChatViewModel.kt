@@ -49,7 +49,8 @@ data class ChatUiState(
     val currentTask: String = "General",
     val brainMode: String = "byok",
     val roomId: String? = null,
-    val inviteHint: String = ""
+    val inviteHint: String = "",
+    val members: List<String> = emptyList()
 )
 
 class ChatViewModel(app: Application) : AndroidViewModel(app) {
@@ -144,8 +145,17 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(inviteHint = "Sign in and create a task first") }
                 return@launch
             }
-            val err = runCatching { collab.invite(token, room, email) }.exceptionOrNull()
-            _state.update { it.copy(inviteHint = if (err == null) "Invited $email" else (err.message ?: "invite failed")) }
+            val err = runCatching { collab.invite(token, room, email.trim()) }.exceptionOrNull()
+            _state.update {
+                if (err == null) {
+                    it.copy(
+                        inviteHint = "Invited ${email.trim()}",
+                        members = (it.members + email.trim()).distinct()
+                    )
+                } else {
+                    it.copy(inviteHint = err.message ?: "invite failed")
+                }
+            }
         }
     }
 
@@ -168,7 +178,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 currentTask = it.currentTask,
                 brainMode = it.brainMode,
                 roomId = it.roomId,
-                inviteHint = it.inviteHint
+                inviteHint = it.inviteHint,
+                members = it.members
             )
         }
     }

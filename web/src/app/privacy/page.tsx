@@ -4,7 +4,7 @@ export default function PrivacyPage() {
   return (
     <main className="legal">
       <div className="legalbox">
-        <a href="/">← Back</a>
+        <a className="back" href="/">← Back</a>
         <pre>{privacyText}</pre>
       </div>
     </main>

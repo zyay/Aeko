@@ -38,6 +38,8 @@ import androidx.core.net.toUri
 import com.zyay.lyan.remote.DeviceStore
 import com.zyay.lyan.remote.SshClient
 import com.zyay.lyan.ui.theme.LyanBlack
+import com.zyay.lyan.ui.theme.LyanInk
+import com.zyay.lyan.ui.theme.LyanLine
 import com.zyay.lyan.ui.theme.LyanMuted
 import com.zyay.lyan.ui.theme.LyanText
 import kotlinx.coroutines.Dispatchers
@@ -60,8 +62,8 @@ fun DevicesScreen(store: DeviceStore, ssh: SshClient, onBack: () -> Unit, onVnc:
     val colors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = LyanText,
         unfocusedTextColor = LyanText,
-        focusedBorderColor = Color(0xFF3F3F46),
-        unfocusedBorderColor = Color(0xFF27272A)
+        focusedBorderColor = LyanInk,
+        unfocusedBorderColor = LyanLine
     )
     Column(
         Modifier.fillMaxSize().background(LyanBlack).statusBarsPadding().verticalScroll(rememberScrollState()).padding(12.dp)
@@ -88,7 +90,7 @@ fun DevicesScreen(store: DeviceStore, ssh: SshClient, onBack: () -> Unit, onVnc:
             },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).height(48.dp),
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+            colors = ButtonDefaults.buttonColors(containerColor = LyanInk, contentColor = Color.White)
         ) { Text(if (connected) "Reconnect SSH" else "Connect SSH") }
         TextButton(onClick = { ssh.disconnect() }) { Text("Disconnect", color = LyanText) }
         Text(log, color = LyanMuted, modifier = Modifier.padding(12.dp))
@@ -97,13 +99,13 @@ fun DevicesScreen(store: DeviceStore, ssh: SshClient, onBack: () -> Unit, onVnc:
             onClick = { scope.launch { output = withContext(Dispatchers.IO) { ssh.exec(command) } } },
             enabled = connected,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF222222), contentColor = LyanText)
+            colors = ButtonDefaults.buttonColors(containerColor = LyanInk, contentColor = Color.White)
         ) { Text("Run on PC") }
         Text(output, color = LyanText, fontSize = 13.sp, modifier = Modifier.padding(12.dp))
         Button(
             onClick = onVnc,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF222222), contentColor = LyanText)
+            colors = ButtonDefaults.buttonColors(containerColor = LyanInk, contentColor = Color.White)
         ) { Text("Open PC screen (noVNC)") }
         TextButton(onClick = {
             context.startActivity(Intent(Intent.ACTION_VIEW, vnc.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
