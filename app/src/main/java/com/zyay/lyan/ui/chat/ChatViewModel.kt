@@ -5,11 +5,14 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.zyay.lyan.auth.AuthStore
+import com.zyay.lyan.brain.BrainStore
+import com.zyay.lyan.collab.CollabClient
 import com.zyay.lyan.engine.EnginePhase
 import com.zyay.lyan.engine.GenerationHud
 import com.zyay.lyan.engine.OnDeviceEngine
 import com.zyay.lyan.memory.VaultStore
 import com.zyay.lyan.models.HfModelStore
+import com.zyay.lyan.notify.ActivityNotify
 import com.zyay.lyan.remote.DeviceStore
 import com.zyay.lyan.remote.SshClient
 import com.zyay.lyan.ui.components.OrbState
@@ -41,7 +44,10 @@ data class ChatUiState(
     val showHud: Boolean = true,
     val account: String? = null,
     val sshLive: Boolean = false,
-    val modelReady: Boolean = false
+    val modelReady: Boolean = false,
+    val tasks: List<String> = listOf("General"),
+    val currentTask: String = "General",
+    val brainMode: String = "byok"
 )
 
 class ChatViewModel(app: Application) : AndroidViewModel(app) {
@@ -49,9 +55,16 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     val models = HfModelStore(app)
     val devices = DeviceStore(app)
     val ssh = SshClient()
+    val brain = BrainStore(app)
+    private val collab = CollabClient(app)
     private val engine = OnDeviceEngine(ssh = ssh)
     private val _state = MutableStateFlow(
-        ChatUiState(account = auth.account.value, modelReady = models.current().ready)
+        ChatUiState(
+            account = auth.account.value,
+            modelReady = models.current().ready,
+            onlineTools = brain.valid,
+            brainMode = brain.mode
+        )
     )
     val state: StateFlow<ChatUiState> = _state
     private var nextId = 1L
@@ -103,6 +116,27 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(vaultText = (it.vaultText + "\n\n" + text).take(200_000), vaultName = "Shared text") }
     }
 
+    fun applyBrain(valid: Boolean) {
+        _state.update { it.copy(onlineTools = valid, brainMode = brain.mode) }
+    }
+
+    fun addTask(title: String) {
+        val name = title.ifBlank { "Task ${_state.value.tasks.size + 1}" }
+        _state.update { it.copy(tasks = it.tasks + name, currentTask = name) }
+        viewModelScope.launch(Dispatchers.IO) {
+            val token = auth.token()
+            if (token.isNotBlank()) runCatching {
+                collab.publishKey(token)
+                collab.createRoom(token, name)
+            }
+            ActivityNotify.show(getApplication(), name)
+        }
+    }
+
+    fun selectTask(title: String) {
+        _state.update { it.copy(currentTask = title) }
+    }
+
     fun newChat() {
         _state.update {
             ChatUiState(
@@ -113,7 +147,10 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 showHud = it.showHud,
                 account = it.account,
                 sshLive = it.sshLive,
-                modelReady = it.modelReady
+                modelReady = it.modelReady,
+                tasks = it.tasks,
+                currentTask = it.currentTask,
+                brainMode = it.brainMode
             )
         }
     }
@@ -148,7 +185,11 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                     _state.value.vaultText,
                     _state.value.agentMode,
                     online,
-                    models.current().ready
+                    models.current().ready,
+                    brain.baseUrl,
+                    brain.apiKey,
+                    brain.model,
+                    brain.valid
                 )
             }
             _state.update { it.copy(phase = EnginePhase.Speaking) }

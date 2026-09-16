@@ -94,7 +94,8 @@ fun ChatScreen(
     onTerms: () -> Unit,
     onModels: () -> Unit,
     onDevices: () -> Unit,
-    onVnc: () -> Unit
+    onVnc: () -> Unit,
+    onOnboard: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     val listState = rememberLazyListState()
@@ -119,9 +120,15 @@ fun ChatScreen(
                     Text("Lyan", color = LyanText, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
                     Text("Personal AI employee", color = LyanMuted, fontSize = 13.sp)
                     Spacer(Modifier.height(20.dp))
-                    DrawerRow("New chat", Icons.Outlined.Add) {
-                        viewModel.newChat()
+                    DrawerRow("New task", Icons.Outlined.Add) {
+                        viewModel.addTask("Task ${state.tasks.size + 1}")
                         scope.launch { drawer.close() }
+                    }
+                    state.tasks.forEach { task ->
+                        DrawerRow(task, Icons.Outlined.Menu) {
+                            viewModel.selectTask(task)
+                            scope.launch { drawer.close() }
+                        }
                     }
                     DrawerRow("Models (Hugging Face)", Icons.Outlined.Download) {
                         scope.launch { drawer.close() }
@@ -138,6 +145,11 @@ fun ChatScreen(
                     DrawerRow("Sign ${if (state.account == null) "in" else "out"}", Icons.Outlined.AccountCircle) {
                         if (state.account == null) viewModel.auth.signIn(context) else viewModel.auth.signOut()
                         scope.launch { drawer.close() }
+                    }
+                    DrawerRow("Redo onboarding", Icons.Outlined.PrivacyTip) {
+                        viewModel.brain.onboarded = false
+                        scope.launch { drawer.close() }
+                        onOnboard()
                     }
                     DrawerRow("Privacy", Icons.Outlined.PrivacyTip) {
                         scope.launch { drawer.close() }
@@ -172,7 +184,7 @@ fun ChatScreen(
                 IconButton(onClick = { scope.launch { drawer.open() } }) {
                     Icon(Icons.Outlined.Menu, contentDescription = "Menu", tint = LyanText)
                 }
-                Text("Lyan", color = LyanText, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+                Text(state.currentTask, color = LyanText, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
                 Spacer(Modifier.weight(1f))
                 Text(
                     "${"%.1f".format(state.hud.tokensPerSecond)} t/s${if (state.hud.net) " · NET" else ""}${if (state.sshLive) " · SSH" else ""}",

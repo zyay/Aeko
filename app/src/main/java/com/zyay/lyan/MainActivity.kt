@@ -68,7 +68,9 @@ private enum class LyanRoute { Onboarding, Chat, Privacy, Terms, Models, Devices
 
 @Composable
 private fun LyanRoot(viewModel: ChatViewModel) {
-    var route by remember { mutableStateOf(LyanRoute.Onboarding) }
+    var route by remember {
+        mutableStateOf(if (viewModel.brain.onboarded) LyanRoute.Chat else LyanRoute.Onboarding)
+    }
     var from by remember { mutableStateOf(LyanRoute.Onboarding) }
 
     BackHandler(enabled = route != LyanRoute.Chat && route != LyanRoute.Onboarding) {
@@ -77,6 +79,7 @@ private fun LyanRoot(viewModel: ChatViewModel) {
 
     when (route) {
         LyanRoute.Onboarding -> OnboardingScreen(
+            viewModel = viewModel,
             onContinue = { route = LyanRoute.Chat },
             onPrivacy = { from = LyanRoute.Onboarding; route = LyanRoute.Privacy },
             onTerms = { from = LyanRoute.Onboarding; route = LyanRoute.Terms }
@@ -87,7 +90,8 @@ private fun LyanRoot(viewModel: ChatViewModel) {
             onTerms = { from = LyanRoute.Chat; route = LyanRoute.Terms },
             onModels = { from = LyanRoute.Chat; route = LyanRoute.Models },
             onDevices = { from = LyanRoute.Chat; route = LyanRoute.Devices },
-            onVnc = { from = LyanRoute.Chat; route = LyanRoute.Vnc }
+            onVnc = { from = LyanRoute.Chat; route = LyanRoute.Vnc },
+            onOnboard = { route = LyanRoute.Onboarding }
         )
         LyanRoute.Privacy -> LegalScreen("Privacy Policy", LegalCopy.privacy) { route = from }
         LyanRoute.Terms -> LegalScreen("Terms of Use", LegalCopy.terms) { route = from }

@@ -1,40 +1,67 @@
 "use client";
 
-import { FormEvent, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { BorderBeam } from "border-beam";
 import { Shdr21 } from "@/components/ui/shdr-21";
+import { Onboarding } from "@/components/onboarding";
+import {
+  decryptMessage,
+  encryptMessage,
+  loadBrain,
+  newRoomKey,
+  publicJwk,
+  saveBrain,
+  unwrapRoomKey,
+  wrapRoomKey,
+  type BrainConfig,
+} from "@/lib/crypto";
+import { chatComplete } from "@/lib/llm";
 
 type OrbState = "idle" | "thinking" | "speaking";
-type Message = { id: number; role: "user" | "lyan"; text: string };
-
-const tips = [
-  "Summarize liability clauses in this contract",
-  "Fix this Python bug",
-  "What can Lyan do on-device?",
-  "How does Vercel sign-in work?",
-];
-
-function replyFor(prompt: string, online: boolean, agent: boolean, code: boolean, vault: string) {
-  const vaultBit = vault ? `\n\nVault excerpt:\n${vault.slice(0, 500)}` : "";
-  return `Lyan · ${code ? "Code Mode" : "General"} · ${agent ? "Agent" : "Chat"} · ${online ? "Online flag" : "Offline"}.
-
-You said: “${prompt}”
-
-Composer is official border-beam. Orb is Orbkit Shdr21 (idle / thinking / speaking). Identity is optional Auth.js on Vercel (GitHub + Google). HTTPS search/fetch runs in the Android APK when Online is on.${vaultBit}`;
-}
+type Line = { id: string; role: "user" | "lyan"; text: string };
+type Room = { id: string; title: string };
 
 export function ChatApp({ userEmail }: { userEmail: string | null }) {
+  const [brain, setBrain] = useState<BrainConfig | null>(null);
+  const [ready, setReady] = useState(false);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [roomKey, setRoomKey] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [invite, setInvite] = useState("");
   const [agent, setAgent] = useState(true);
   const [auto, setAuto] = useState(true);
   const [online, setOnline] = useState(false);
   const [code, setCode] = useState(false);
   const [state, setState] = useState<OrbState>("idle");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Line[]>([]);
   const [vault, setVault] = useState("");
   const [vaultName, setVaultName] = useState<string | null>(null);
   const [hud, setHud] = useState("0.0 t/s");
+  const [title, setTitle] = useState("New task");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    loadBrain().then((b) => {
+      setBrain(b);
+      setOnline(Boolean(b?.valid));
+      setReady(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!userEmail || !brain?.onboarded) return;
+    refreshRooms();
+    const t = window.setInterval(refreshRooms, 20000);
+    return () => window.clearInterval(t);
+  }, [userEmail, brain?.onboarded]);
+
+  useEffect(() => {
+    if (!roomId || !userEmail) return;
+    openRoom(roomId);
+    const t = window.setInterval(() => openRoom(roomId), 15000);
+    return () => window.clearInterval(t);
+  }, [roomId, userEmail]);
 
   const volumes = useMemo(
     () => ({
@@ -45,27 +72,122 @@ export function ChatApp({ userEmail }: { userEmail: string | null }) {
     [],
   );
 
+  async function refreshRooms() {
+    const res = await fetch("/api/rooms");
+    if (!res.ok) return;
+    const json = (await res.json()) as { rooms: Room[] };
+    setRooms(json.rooms);
+    if (!roomId && json.rooms[0]) setRoomId(json.rooms[0].id);
+  }
+
+  async function openRoom(id: string) {
+    const res = await fetch(`/api/rooms/${id}/messages`);
+    if (!res.ok) return;
+    const json = await res.json();
+    const mine = json.membership as { wrappedKey: string; wrapIv: string; peerPub: string };
+    try {
+      const key = await unwrapRoomKey(mine.wrappedKey, mine.wrapIv, JSON.parse(mine.peerPub));
+      setRoomKey(key);
+      const lines: Line[] = [];
+      for (const m of json.messages as { id: string; from: string; iv: string; ciphertext: string }[]) {
+        const text = await decryptMessage(key, m.iv, m.ciphertext).catch(() => "(undecryptable)");
+        lines.push({ id: m.id, role: m.from === userEmail ? "user" : "lyan", text: `${m.from}: ${text}` });
+      }
+      setMessages(lines);
+    } catch {
+      setMessages([]);
+    }
+  }
+
+  async function createTask() {
+    const pub = publicJwk();
+    if (!pub) return;
+    const key = newRoomKey();
+    const wrap = await wrapRoomKey(key, pub);
+    const res = await fetch("/api/rooms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, wrappedKey: wrap.wrappedKey, wrapIv: wrap.wrapIv, peerPub: JSON.stringify(pub) }),
+    });
+    if (!res.ok) return;
+    const { id } = (await res.json()) as { id: string };
+    setRoomId(id);
+    setRoomKey(key);
+    refreshRooms();
+  }
+
+  async function addPerson() {
+    if (!roomId || !roomKey || !invite) return;
+    const lookup = await fetch(`/api/users?email=${encodeURIComponent(invite)}`);
+    if (!lookup.ok) {
+      setHud("User must sign in once");
+      return;
+    }
+    const user = (await lookup.json()) as { publicKey: string };
+    const their = JSON.parse(user.publicKey) as JsonWebKey;
+    const wrap = await wrapRoomKey(roomKey, their);
+    await fetch(`/api/rooms/${roomId}/members`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: invite, wrappedKey: wrap.wrappedKey, wrapIv: wrap.wrapIv, peerPub: JSON.stringify(publicJwk()) }),
+    });
+    await fetch(`/api/rooms/${roomId}/notify`, { method: "POST" });
+    if (Notification.permission === "granted") new Notification("Lyan", { body: `Invited ${invite} (no message body)` });
+    setInvite("");
+  }
+
+  async function postPlain(text: string) {
+    if (!roomId || !roomKey) return;
+    const enc = await encryptMessage(roomKey, text);
+    await fetch(`/api/rooms/${roomId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(enc),
+    });
+    await fetch(`/api/rooms/${roomId}/notify`, { method: "POST" });
+  }
+
   async function run(prompt: string) {
-    if (!prompt || state !== "idle") return;
+    if (!prompt || state !== "idle" || !brain) return;
     setDraft("");
-    setMessages((current) => [...current, { id: Date.now(), role: "user", text: prompt }]);
+    setMessages((current) => [...current, { id: String(Date.now()), role: "user", text: prompt }]);
+    await postPlain(prompt);
     setState("thinking");
-    await wait(380);
+    const start = performance.now();
+    let full: string;
+    try {
+      if (brain.valid && brain.baseUrl) {
+        full = await chatComplete({
+          baseUrl: brain.baseUrl,
+          apiKey: brain.apiKey,
+          model: brain.model,
+          messages: [
+            { role: "system", content: `Lyan. ${code ? "Code mode." : ""} ${agent ? "Agent." : ""} ${online ? "Online tools allowed on Android." : "Offline."}` },
+            { role: "user", content: vault ? `${prompt}\n\nVault:\n${vault.slice(0, 4000)}` : prompt },
+          ],
+        });
+      } else if (brain.mode === "gguf") {
+        full = "GGUF is downloaded on Android. On the web, pick BYOK or your own server.";
+      } else {
+        full = "Add a valid API key in Settings / onboarding, or use a local OpenAI-compatible server.";
+      }
+    } catch (e) {
+      full = String(e);
+    }
     setState("speaking");
-    const full = replyFor(code ? `Code Mode. ${prompt}` : prompt, online, agent, code, vault);
-    const id = Date.now() + 1;
+    const id = String(Date.now() + 1);
     setMessages((current) => [...current, { id, role: "lyan", text: "" }]);
     let built = "";
-    const start = performance.now();
     const parts = full.split(/(?<=\s)/);
     for (let i = 0; i < parts.length; i++) {
       built += parts[i];
-      const snapshot = built;
       const elapsed = (performance.now() - start) / 1000;
       setHud(`${(elapsed > 0.05 ? (i + 1) / elapsed : 18).toFixed(1)} t/s`);
+      const snapshot = built;
       setMessages((current) => current.map((msg) => (msg.id === id ? { ...msg, text: snapshot } : msg)));
-      await wait(14);
+      await wait(10);
     }
+    await postPlain(full);
     setState("idle");
   }
 
@@ -74,21 +196,54 @@ export function ChatApp({ userEmail }: { userEmail: string | null }) {
     await run(draft.trim());
   }
 
+  if (!ready) return null;
+  if (!brain?.onboarded) {
+    return (
+      <Onboarding
+        userEmail={userEmail}
+        onDone={(cfg) => {
+          setBrain(cfg);
+          setOnline(cfg.valid);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">Lyan</div>
-        <div className="sub">Intelligence without surveillance</div>
-        <button className="navbtn" type="button" onClick={() => setMessages([])}>
-          New chat
+        <div className="sub">Tasks · E2E · your brain</div>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Task name" />
+        <button className="navbtn" type="button" onClick={createTask} disabled={!userEmail}>
+          New task
+        </button>
+        {rooms.map((r) => (
+          <button key={r.id} className="navbtn" type="button" onClick={() => setRoomId(r.id)}>
+            {r.title}
+          </button>
+        ))}
+        <input value={invite} onChange={(e) => setInvite(e.target.value)} placeholder="Add people (email)" />
+        <button className="navbtn" type="button" onClick={addPerson} disabled={!roomId}>
+          Invite
         </button>
         <a className="navbtn" href="/login">
-          {userEmail ?? "Sign in with GitHub / Google"}
+          {userEmail ?? "Sign in"}
         </a>
         <a className="navbtn" href="https://github.com/zyay/Lyan/releases/tag/latest">
-          Get Android APK
+          Android APK
         </a>
         <div className="grow" />
+        <button
+          className="navbtn"
+          type="button"
+          onClick={async () => {
+            await saveBrain({ ...brain, onboarded: false });
+            setBrain({ ...brain, onboarded: false });
+          }}
+        >
+          Redo onboarding
+        </button>
         <a className="navbtn" href="/privacy">
           Privacy
         </a>
@@ -99,8 +254,11 @@ export function ChatApp({ userEmail }: { userEmail: string | null }) {
 
       <div className="stagewrap">
         <header className="top">
-          <strong>Lyan</strong>
-          <span className="hud">{hud}{online ? " · NET" : ""}</span>
+          <strong>{rooms.find((r) => r.id === roomId)?.title ?? "Workspace"}</strong>
+          <span className="hud">
+            {hud}
+            {online ? " · NET" : ""} · {brain.mode}
+          </span>
         </header>
 
         <section className="stage">
@@ -126,15 +284,8 @@ export function ChatApp({ userEmail }: { userEmail: string | null }) {
           />
           {messages.length === 0 ? (
             <>
-              <h1 className="hero">What's on your mind?</h1>
-              <p className="hint">Grok-style composer. Official beam + SHDR-21 orb. Local by default.</p>
-              <div className="tips">
-                {tips.map((tip) => (
-                  <button key={tip} className="tip" type="button" onClick={() => run(tip)}>
-                    {tip}
-                  </button>
-                ))}
-              </div>
+              <h1 className="hero">What&apos;s the task?</h1>
+              <p className="hint">Teams-style thread. Ciphertext on Vercel. LLM from your URL.</p>
             </>
           ) : (
             <div className="thread">
@@ -148,18 +299,16 @@ export function ChatApp({ userEmail }: { userEmail: string | null }) {
           )}
         </section>
 
-        {vaultName && <p className="hint" style={{ textAlign: "center" }}>Vault · {vaultName}</p>}
+        {vaultName && (
+          <p className="hint" style={{ textAlign: "center" }}>
+            Vault · {vaultName}
+          </p>
+        )}
 
         <form onSubmit={onSubmit} className="composer-wrap">
           <BorderBeam size="md" colorVariant="colorful" strength={0.75} theme="dark" active={state !== "thinking"}>
             <div className="composer">
-              <textarea
-                className="field"
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                placeholder="Build anything."
-                rows={2}
-              />
+              <textarea className="field" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Build anything." rows={2} />
               <div className="row">
                 <button className="chip" type="button" onClick={() => setAgent((v) => !v)}>
                   {agent ? "Agent" : "Chat"} ▾

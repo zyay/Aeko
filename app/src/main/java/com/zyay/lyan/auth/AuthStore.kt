@@ -39,12 +39,15 @@ class AuthStore(context: Context) {
         _account.value = null
     }
 
+    fun token(): String = prefs.getString("token", "").orEmpty()
+
     fun capture(uri: Uri?) {
         if (uri == null || uri.scheme != "lyan" || uri.host != "auth") return
         val email = uri.getQueryParameter("email") ?: return
         prefs.edit()
             .putString("email", email)
             .putString("name", uri.getQueryParameter("name").orEmpty())
+            .putString("token", uri.getQueryParameter("token").orEmpty())
             .apply()
         _account.value = email
     }

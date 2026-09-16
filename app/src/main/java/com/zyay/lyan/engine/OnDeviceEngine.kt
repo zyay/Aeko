@@ -15,14 +15,19 @@ enum class EnginePhase { Idle, Thinking, Speaking }
 
 class OnDeviceEngine(
     private val tools: OnlineTools = OnlineTools(),
-    private val ssh: SshClient? = null
+    private val ssh: SshClient? = null,
+    private val llm: LlmClient = LlmClient()
 ) {
     fun reply(
         prompt: String,
         vault: String,
         agentEnabled: Boolean,
         onlineEnabled: Boolean,
-        modelReady: Boolean
+        modelReady: Boolean,
+        brainUrl: String = "",
+        brainKey: String = "",
+        brainModel: String = "",
+        brainValid: Boolean = false
     ): String {
         val notes = mutableListOf<String>()
         if (onlineEnabled || (ssh?.connected?.value == true && wantsSsh(prompt))) {
@@ -39,6 +44,16 @@ class OnDeviceEngine(
         } else ""
         val netBlock = if (notes.isNotEmpty()) "\n\nOpenHands-style tools:\n" + notes.joinToString("\n\n") else ""
         val lower = prompt.lowercase()
+        if (brainValid && brainUrl.isNotBlank()) {
+            val system = "You are Lyan. Use tool notes if present. ${if (agentEnabled) "Agent." else ""}"
+            val user = buildString {
+                append(prompt)
+                if (vault.isNotBlank()) append("\n\nVault:\n").append(vault.take(4000))
+                if (notes.isNotEmpty()) append("\n\nTool results:\n").append(notes.joinToString("\n\n"))
+            }
+            return runCatching { llm.chat(brainUrl, brainKey, brainModel, user, system) }
+                .getOrElse { "LLM error: ${it.message}" }
+        }
         val brain = if (modelReady) "GGUF on disk (download complete; llama.cpp runtime next)." else "No GGUF yet — open Models to download from Hugging Face."
         val body = when {
             !onlineEnabled && wantsWeb(lower) && !wantsSsh(prompt) ->

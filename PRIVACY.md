@@ -1,3 +1,3 @@
 # Privacy Policy
 
-Local-first chat. Optional: Vercel sign-in, Hugging Face GGUF download, Online HTTPS tools, SSH to a PC you configure, noVNC WebView. Full text in the Android app.
+Keys stay on device. LLM calls go to your URL. Vercel stores identity and ciphertext rooms only. Notifications have no message body. Full text in the app and on `/privacy`.
