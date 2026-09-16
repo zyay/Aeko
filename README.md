@@ -1,4 +1,4 @@
-# Lyan
+# Aeko
 
 Highlight-style agent workspace: colorful bots, inbox of tasks, encrypted threads. Your OpenAI-compatible brain. Android + web.
 
@@ -6,7 +6,7 @@ Highlight-style agent workspace: colorful bots, inbox of tasks, encrypted thread
 
 ## Install (Android)
 
-1. Download [Lyan.apk](https://github.com/zyay/Lyan/releases/tag/latest)
+1. Download [Aeko.apk](https://github.com/zyay/Lyan/releases/tag/latest)
 2. Allow unknown sources
 3. Open the APK
 
@@ -24,7 +24,7 @@ Environment:
 | `AUTH_URL` | `https://<project>.vercel.app` |
 | `AUTH_TRUST_HOST` | `true` |
 | `DATABASE_URL` or `POSTGRES_URL` | Vercel Postgres / Neon |
-| `LYAN_LLM_PROXY` | `0` (keep off) |
+| `AEKO_LLM_PROXY` | `0` (keep off) |
 
 OAuth callbacks:
 

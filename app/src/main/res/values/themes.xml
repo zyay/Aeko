@@ -1,5 +1,5 @@
 <resources>
-    <style name="Theme.Lyan" parent="android:Theme.Material.Light.NoActionBar">
+    <style name="Theme.Aeko" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">#FFFFFF</item>
         <item name="android:navigationBarColor">#FFFFFF</item>
         <item name="android:windowBackground">#FFFFFF</item>

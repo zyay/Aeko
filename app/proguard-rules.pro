@@ -1,4 +1,4 @@
--keep class com.zyay.lyan.** { *; }
+-keep class com.zyay.aeko.** { *; }
 -keep class okhttp3.** { *; }
 -dontwarn okhttp3.**
 -dontwarn okio.**

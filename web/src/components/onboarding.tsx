@@ -68,7 +68,7 @@ export function Onboarding({
       <div className="onboard-card">
         {step === 0 && (
           <>
-            <h1>Lyan</h1>
+            <h1>Aeko</h1>
             <p>Your brain. Encrypted tasks. Same on phone and PC.</p>
             {userEmail ? <p className="ok">Signed in as {userEmail}</p> : <p>Optional sign-in for shared tasks.</p>}
             <div className="row">

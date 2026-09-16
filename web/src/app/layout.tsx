@@ -3,7 +3,7 @@ import "@bible-strong/avatar-react/styles.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Lyan",
+  title: "Aeko",
   description: "Your team of always-on agents that finish the work.",
 };
 

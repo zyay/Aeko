@@ -18,7 +18,7 @@ import {
 import { chatComplete } from "@/lib/llm";
 
 type OrbState = "idle" | "thinking" | "speaking";
-type Line = { id: string; role: "user" | "lyan"; text: string };
+type Line = { id: string; role: "user" | "aeko"; text: string };
 type Room = { id: string; title: string };
 
 export function ChatApp({ userEmail }: { userEmail: string | null }) {
@@ -91,7 +91,7 @@ export function ChatApp({ userEmail }: { userEmail: string | null }) {
       const lines: Line[] = [];
       for (const m of json.messages as { id: string; from: string; iv: string; ciphertext: string }[]) {
         const text = await decryptMessage(key, m.iv, m.ciphertext).catch(() => "(undecryptable)");
-        lines.push({ id: m.id, role: m.from === userEmail ? "user" : "lyan", text: `${m.from}: ${text}` });
+        lines.push({ id: m.id, role: m.from === userEmail ? "user" : "aeko", text: `${m.from}: ${text}` });
       }
       setMessages(lines);
     } catch {
@@ -132,7 +132,7 @@ export function ChatApp({ userEmail }: { userEmail: string | null }) {
       body: JSON.stringify({ email: invite, wrappedKey: wrap.wrappedKey, wrapIv: wrap.wrapIv, peerPub: JSON.stringify(publicJwk()) }),
     });
     await fetch(`/api/rooms/${roomId}/notify`, { method: "POST" });
-    if (Notification.permission === "granted") new Notification("Lyan", { body: `Invited ${invite} (no message body)` });
+    if (Notification.permission === "granted") new Notification("Aeko", { body: `Invited ${invite} (no message body)` });
     setInvite("");
   }
 
@@ -162,7 +162,7 @@ export function ChatApp({ userEmail }: { userEmail: string | null }) {
           apiKey: brain.apiKey,
           model: brain.model,
           messages: [
-            { role: "system", content: `Lyan. ${code ? "Code mode." : ""} ${agent ? "Agent." : ""} ${online ? "Online tools allowed on Android." : "Offline."}` },
+            { role: "system", content: `Aeko. ${code ? "Code mode." : ""} ${agent ? "Agent." : ""} ${online ? "Online tools allowed on Android." : "Offline."}` },
             { role: "user", content: vault ? `${prompt}\n\nVault:\n${vault.slice(0, 4000)}` : prompt },
           ],
         });
@@ -176,7 +176,7 @@ export function ChatApp({ userEmail }: { userEmail: string | null }) {
     }
     setState("speaking");
     const id = String(Date.now() + 1);
-    setMessages((current) => [...current, { id, role: "lyan", text: "" }]);
+    setMessages((current) => [...current, { id, role: "aeko", text: "" }]);
     let built = "";
     const parts = full.split(/(?<=\s)/);
     for (let i = 0; i < parts.length; i++) {
@@ -212,7 +212,7 @@ export function ChatApp({ userEmail }: { userEmail: string | null }) {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand">Lyan</div>
+        <div className="brand">Aeko</div>
         <div className="sub">Tasks · E2E · your brain</div>
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Task name" />
         <button className="navbtn" type="button" onClick={createTask} disabled={!userEmail}>
@@ -291,7 +291,7 @@ export function ChatApp({ userEmail }: { userEmail: string | null }) {
             <div className="thread">
               {messages.map((msg) => (
                 <div key={msg.id} className={msg.role === "user" ? "msg user" : "msg"}>
-                  <div className="who">{msg.role === "user" ? "You" : "Lyan"}</div>
+                  <div className="who">{msg.role === "user" ? "You" : "Aeko"}</div>
                   {msg.role === "user" ? <span className="userbubble">{msg.text}</span> : msg.text}
                 </div>
               ))}

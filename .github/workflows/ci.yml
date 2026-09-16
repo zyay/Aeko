@@ -61,7 +61,7 @@ jobs:
         run: ./gradlew assembleRelease --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: lyan-apk
+          name: aeko-apk
           path: app/build/outputs/apk/release/*.apk
       - name: Publish latest GitHub Release
         if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
@@ -70,6 +70,6 @@ jobs:
         run: |
           set -euo pipefail
           APK=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
-          cp "$APK" Lyan.apk
+          cp "$APK" Aeko.apk
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest Lyan.apk --title "Lyan latest" --notes "Installable APK from commit ${GITHUB_SHA}. Rolling release from current master."
+          gh release create latest Aeko.apk --title "Aeko latest" --notes "Installable APK from commit ${GITHUB_SHA}. Rolling release from current master."
