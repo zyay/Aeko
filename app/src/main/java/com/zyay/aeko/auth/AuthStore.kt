@@ -6,8 +6,12 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.zyay.aeko.BuildConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -17,6 +21,7 @@ import org.json.JSONObject
 class AuthStore(context: Context) {
     private val app = context.applicationContext
     private val http = OkHttpClient()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val prefs = runCatching {
         val master = MasterKey.Builder(app).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
         EncryptedSharedPreferences.create(
@@ -32,6 +37,8 @@ class AuthStore(context: Context) {
 
     private val _account = MutableStateFlow(prefs.getString("email", null))
     val account: StateFlow<String?> = _account
+    private val _lastError = MutableStateFlow<String?>(null)
+    val lastError: StateFlow<String?> = _lastError
 
     fun signIn(context: Context) {
         val uri = Uri.parse("${BuildConfig.AUTH_URL.trimEnd('/')}/login?android=1")
@@ -43,6 +50,7 @@ class AuthStore(context: Context) {
     fun signOut() {
         prefs.edit().clear().apply()
         _account.value = null
+        _lastError.value = null
     }
 
     fun token(): String = prefs.getString("token", "").orEmpty()
@@ -51,7 +59,7 @@ class AuthStore(context: Context) {
         if (uri == null || uri.host != "auth" || (uri.scheme != "aeko" && uri.scheme != "lyan")) return
         val code = uri.getQueryParameter("code")
         if (!code.isNullOrBlank()) {
-            Thread { exchange(code) }.start()
+            scope.launch { exchange(code) }
             return
         }
         val email = uri.getQueryParameter("email") ?: return
@@ -66,20 +74,33 @@ class AuthStore(context: Context) {
         val req = Request.Builder().url(url).post(body).build()
         runCatching {
             http.newCall(req).execute().use { res ->
-                val json = JSONObject(res.body?.string().orEmpty().ifBlank { "{}" })
+                val raw = res.body?.string().orEmpty().ifBlank { "{}" }
+                if (!res.isSuccessful) {
+                    _lastError.value = "Sign-in failed (${res.code}). Attach Neon DATABASE_URL if this persists."
+                    return
+                }
+                val json = JSONObject(raw)
                 val email = json.optString("email")
                 val token = json.optString("token")
-                if (email.isNotBlank() && token.isNotBlank()) save(email, json.optString("name"), token)
+                if (email.isBlank() || token.isBlank()) {
+                    _lastError.value = "Sign-in claim was empty"
+                    return
+                }
+                save(email, json.optString("name"), token)
             }
+        }.onFailure {
+            _lastError.value = it.message ?: "Sign-in network error"
         }
     }
 
     private fun save(email: String, name: String, token: String) {
+        val who = email.trim().lowercase()
         prefs.edit()
-            .putString("email", email)
+            .putString("email", who)
             .putString("name", name)
             .putString("token", token)
             .apply()
-        _account.value = email
+        _lastError.value = null
+        _account.value = who
     }
 }

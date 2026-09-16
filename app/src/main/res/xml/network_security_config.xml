@@ -5,6 +5,7 @@
             <certificates src="system" />
         </trust-anchors>
     </base-config>
+    <!-- Release: HTTPS by default. Loopback/emulator llama-server + noVNC only. LAN HTTP needs debug APK or HTTPS. -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>

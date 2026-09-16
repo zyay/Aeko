@@ -182,7 +182,9 @@ class CollabClient(context: Context) {
 
     private fun ecdh(theirPubJson: String): ByteArray {
         val kf = KeyFactory.getInstance("EC")
-        val mine = kf.generatePrivate(PKCS8EncodedKeySpec(Base64.decode(prefs.getString("priv", "")!!, Base64.NO_WRAP)))
+        val mineRaw = prefs.getString("priv", "").orEmpty()
+        if (mineRaw.isBlank()) throw IllegalStateException("missing device key")
+        val mine = kf.generatePrivate(PKCS8EncodedKeySpec(Base64.decode(mineRaw, Base64.NO_WRAP)))
         val theirs = parsePublic(theirPubJson)
         val ka = KeyAgreement.getInstance("ECDH")
         ka.init(mine)
@@ -234,7 +236,9 @@ class CollabClient(context: Context) {
     private fun get(url: String, token: String): JSONObject {
         val req = Request.Builder().url(url).header("Authorization", "Bearer $token").build()
         http.newCall(req).execute().use { res ->
-            return JSONObject(res.body?.string().orEmpty().ifBlank { "{}" })
+            val body = res.body?.string().orEmpty().ifBlank { "{}" }
+            if (!res.isSuccessful) throw IllegalStateException("HTTP ${res.code}: ${body.take(180)}")
+            return JSONObject(body)
         }
     }
 
@@ -242,14 +246,18 @@ class CollabClient(context: Context) {
         val req = Request.Builder().url(url).header("Authorization", "Bearer $token")
             .post(body.toString().toRequestBody("application/json".toMediaType())).build()
         http.newCall(req).execute().use { res ->
-            return JSONObject(res.body?.string().orEmpty().ifBlank { "{}" })
+            val text = res.body?.string().orEmpty().ifBlank { "{}" }
+            if (!res.isSuccessful) throw IllegalStateException("HTTP ${res.code}: ${text.take(180)}")
+            return JSONObject(text)
         }
     }
 
     private fun put(url: String, token: String, body: JSONObject) {
         val req = Request.Builder().url(url).header("Authorization", "Bearer $token")
             .put(body.toString().toRequestBody("application/json".toMediaType())).build()
-        http.newCall(req).execute()
+        http.newCall(req).execute().use { res ->
+            if (!res.isSuccessful) throw IllegalStateException("HTTP ${res.code}")
+        }
     }
 
     private fun b64(bytes: ByteArray) = Base64.encodeToString(bytes, Base64.NO_WRAP)

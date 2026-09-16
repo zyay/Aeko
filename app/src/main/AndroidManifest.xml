@@ -12,7 +12,7 @@
     </queries>
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@drawable/ic_launcher_fg"
         android:label="@string/app_name"
         android:roundIcon="@drawable/ic_launcher_fg"

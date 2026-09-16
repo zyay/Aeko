@@ -76,6 +76,6 @@ class LlmClient {
 
     fun ping(baseUrl: String, apiKey: String, model: String): Boolean {
         val reply = chat(baseUrl, apiKey, model, "Reply with the single word: pong", "ping")
-        return reply.contains("pong", ignoreCase = true) || reply.isNotBlank()
+        return reply.contains("pong", ignoreCase = true)
     }
 }

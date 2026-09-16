@@ -35,7 +35,8 @@ data class ChatMessage(
     val id: Long,
     val text: String,
     val isUser: Boolean,
-    val kind: String = "chat"
+    val kind: String = "chat",
+    val remoteId: String? = null
 )
 
 data class TaskItem(val title: String, val roomId: String? = null)
@@ -62,7 +63,8 @@ data class ChatUiState(
     val inviteHint: String = "",
     val members: List<String> = emptyList(),
     val authUrl: String = BuildConfig.AUTH_URL,
-    val brainStatus: String = ""
+    val brainStatus: String = "",
+    val durable: Boolean? = null
 )
 
 class ChatViewModel(app: Application) : AndroidViewModel(app) {
@@ -86,6 +88,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     private var nextId = 1L
     private var sendJob: Job? = null
     @Volatile private var stopFlag = false
+    private val seenRemote = mutableSetOf<String>()
 
     init {
         restoreTasks()
@@ -93,11 +96,17 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             auth.account.collect { email -> _state.update { it.copy(account = email) } }
         }
         viewModelScope.launch {
+            auth.lastError.collect { err ->
+                if (!err.isNullOrBlank()) _state.update { it.copy(inviteHint = err) }
+            }
+        }
+        viewModelScope.launch {
             ssh.connected.collect { live -> _state.update { it.copy(sshLive = live) } }
         }
         viewModelScope.launch {
             models.status.collect { st -> _state.update { it.copy(modelReady = st.ready) } }
         }
+        viewModelScope.launch(Dispatchers.IO) { pingHealth() }
         viewModelScope.launch(Dispatchers.IO) {
             while (isActive) {
                 delay(12_000)
@@ -195,16 +204,20 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         persist()
         viewModelScope.launch(Dispatchers.IO) {
             val token = auth.token()
-            if (token.isNotBlank()) runCatching {
-                collab.publishKey(token)
-                val id = collab.createRoom(token, name)
-                _state.update { ui ->
-                    ui.copy(
-                        roomId = id.ifBlank { ui.roomId },
-                        tasks = ui.tasks.map { if (it.title == name) it.copy(roomId = id) else it }
-                    )
-                }
-                persist()
+            if (token.isNotBlank()) {
+                val err = runCatching {
+                    collab.publishKey(token)
+                    val id = collab.createRoom(token, name)
+                    if (id.isBlank()) throw IllegalStateException("empty room id")
+                    _state.update { ui ->
+                        ui.copy(
+                            roomId = id,
+                            tasks = ui.tasks.map { if (it.title == name) it.copy(roomId = id) else it }
+                        )
+                    }
+                    persist()
+                }.exceptionOrNull()
+                if (err != null) _state.update { it.copy(inviteHint = err.message ?: "Could not create room") }
             }
             ActivityNotify.show(getApplication(), name)
         }
@@ -234,6 +247,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectTask(title: String) {
         val item = _state.value.tasks.find { it.title == title }
+        seenRemote.clear()
         _state.update { it.copy(currentTask = title, roomId = item?.roomId, messages = emptyList()) }
         persist()
         viewModelScope.launch(Dispatchers.IO) { syncRoom(notify = false) }
@@ -361,15 +375,32 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun postPlain(text: String) {
         if (text.isBlank()) return
-        val room = _state.value.roomId ?: return
         val token = auth.token()
         if (token.isBlank()) return
         viewModelScope.launch(Dispatchers.IO) {
+            var room = _state.value.roomId
+            var tries = 0
+            while (room.isNullOrBlank() && tries < 20) {
+                delay(150)
+                room = _state.value.roomId
+                tries++
+            }
+            if (room.isNullOrBlank()) return@launch
             runCatching {
                 val snap = collab.fetchSnapshot(token, room)
                 val enc = collab.encrypt(snap.key, text)
                 collab.postCipher(token, room, enc.first, enc.second)
+            }.onFailure { err ->
+                _state.update { it.copy(inviteHint = err.message ?: "Could not sync message") }
             }
+        }
+    }
+
+    private fun pingHealth() {
+        runCatching {
+            val url = java.net.URL("${BuildConfig.AUTH_URL.trimEnd('/')}/api/health")
+            val json = JSONObject(url.readText())
+            _state.update { it.copy(durable = json.optBoolean("durable", json.optString("db") == "postgres")) }
         }
     }
 
@@ -398,17 +429,37 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         runCatching {
             val snap = collab.fetchSnapshot(token, room)
             val me = auth.account.value
-            val lines = snap.messages.map { m ->
+            val incoming = snap.messages.map { m ->
                 val text = runCatching { collab.decrypt(snap.key, m.iv, m.ciphertext) }.getOrDefault("(undecryptable)")
-                ChatMessage(m.id.hashCode().toLong() and 0x7fffffffL, text, m.from == me)
+                ChatMessage(remoteStableId(m.id), text, m.from.equals(me, ignoreCase = true), remoteId = m.id)
             }
-            val prevLast = _state.value.messages.lastOrNull()?.text
-            _state.update { it.copy(members = snap.members, messages = lines.ifEmpty { it.messages }) }
-            if (notify && lines.isNotEmpty() && lines.last().text != prevLast && !lines.last().isUser) {
+            val generating = _state.value.phase != EnginePhase.Idle
+            val firstSync = seenRemote.isEmpty()
+            val newRemote = incoming.filter { msg ->
+                val rid = msg.remoteId ?: return@filter false
+                seenRemote.add(rid)
+            }
+            _state.update { ui ->
+                val merged = if (generating) {
+                    val known = ui.messages.mapNotNull { it.remoteId }.toSet()
+                    ui.messages + incoming.filter { it.remoteId != null && it.remoteId !in known }
+                } else {
+                    incoming.ifEmpty { ui.messages }
+                }
+                ui.copy(members = snap.members, messages = merged.distinctBy { it.remoteId ?: "l-${it.id}" })
+            }
+            val lastNew = newRemote.lastOrNull()
+            if (notify && !firstSync && lastNew != null && !lastNew.isUser) {
                 ActivityNotify.show(getApplication(), _state.value.currentTask)
             }
         }
     }
+}
+
+private fun remoteStableId(id: String): Long {
+    var h = 1125899906842597L
+    for (c in id) h = h * 131L + c.code
+    return 1_000_000_000_000L + (h and 0x7fffffffffffL)
 }
 
 fun EnginePhase.toOrb(): OrbState = when (this) {

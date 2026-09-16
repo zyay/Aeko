@@ -74,7 +74,8 @@ fun DevicesScreen(store: DeviceStore, ssh: SshClient, onBack: () -> Unit, onVnc:
         }
         Text("Devices · SSH", color = AekoText, fontSize = 24.sp, modifier = Modifier.padding(horizontal = 12.dp))
         Text(
-            "Enable OpenSSH on the PC. Aeko runs commands over SSH. For the live desktop, start noVNC and open PC screen.",
+            "Enable OpenSSH on the PC. First connect trusts the host key (TOFU); later connects reject a mismatch. " +
+                "Release APK allows cleartext only for localhost / 10.0.2.2 — use HTTPS, a debug APK, or adb reverse for LAN noVNC and llama-server.",
             color = AekoMuted,
             fontSize = 13.sp,
             modifier = Modifier.padding(12.dp)

@@ -80,5 +80,5 @@ export async function testBrain(baseUrl: string, apiKey: string, model: string) 
     model,
     messages: [{ role: "user", content: "Reply with the single word: pong" }],
   });
-  return reply.toLowerCase().includes("pong") || reply.length > 0;
+  return reply.toLowerCase().includes("pong");
 }

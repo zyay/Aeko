@@ -2,8 +2,11 @@ package com.zyay.aeko.remote
 
 import com.jcraft.jsch.ChannelExec
 import com.jcraft.jsch.ChannelSftp
+import com.jcraft.jsch.HostKey
+import com.jcraft.jsch.HostKeyRepository
 import com.jcraft.jsch.JSch
 import com.jcraft.jsch.Session
+import com.jcraft.jsch.UserInfo
 import java.io.ByteArrayOutputStream
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -36,14 +39,10 @@ class SshClient {
                 }
                 val s = jsch.getSession(user, host, port)
                 if (password.isNotBlank()) s.setPassword(password)
-                s.setConfig("StrictHostKeyChecking", "no")
+                s.hostKeyRepository = FingerprintHosts(jsch, expectedFingerprint, onTrust)
+                s.setConfig("StrictHostKeyChecking", "yes")
                 s.connect(12_000)
-                val fp = s.hostKey?.getFingerPrint(jsch) ?: ""
-                if (expectedFingerprint.isNotBlank() && !expectedFingerprint.equals(fp, ignoreCase = true)) {
-                    s.disconnect()
-                    throw IllegalStateException("Host key mismatch. Expected $expectedFingerprint got $fp")
-                }
-                if (expectedFingerprint.isBlank() && fp.isNotBlank()) onTrust(fp)
+                val fp = s.hostKey?.getFingerPrint(jsch) ?: expectedFingerprint
                 session = s
                 _connected.value = true
                 _log.value = "Connected to $user@$host:$port · $fp"
@@ -91,4 +90,27 @@ class SshClient {
             text.ifBlank { "(empty file)" }
         }.getOrElse { it.message ?: "sftp failed" }
     }
+}
+
+private class FingerprintHosts(
+    private val jsch: JSch,
+    private val expected: String,
+    private val onTrust: (String) -> Unit
+) : HostKeyRepository {
+    override fun check(host: String?, key: ByteArray?): Int {
+        if (host.isNullOrBlank() || key == null) return HostKeyRepository.NOT_INCLUDED
+        val fp = HostKey(host, key).getFingerPrint(jsch) ?: return HostKeyRepository.NOT_INCLUDED
+        if (expected.isBlank()) {
+            onTrust(fp)
+            return HostKeyRepository.OK
+        }
+        return if (expected.equals(fp, ignoreCase = true)) HostKeyRepository.OK else HostKeyRepository.CHANGED
+    }
+
+    override fun add(hostkey: HostKey?, ui: UserInfo?) {}
+    override fun remove(host: String?, type: String?) {}
+    override fun remove(host: String?, type: String?, key: ByteArray?) {}
+    override fun getKnownHostsRepositoryID(): String = "aeko-tofu"
+    override fun getHostKey(): Array<HostKey> = emptyArray()
+    override fun getHostKey(host: String?, type: String?): Array<HostKey> = emptyArray()
 }

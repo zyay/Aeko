@@ -66,6 +66,17 @@ fun InboxScreen(
                 Icon(Icons.Outlined.Add, null, tint = AekoInk)
             }
         }
+        if (state.durable == false) {
+            Text(
+                "Rooms are not durable yet. Attach Neon DATABASE_URL so /api/health shows postgres.",
+                color = AekoMuted,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+        }
+        if (state.inviteHint.isNotBlank()) {
+            Text(state.inviteHint, color = AekoMuted, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 16.dp))
+        }
         LazyColumn {
             itemsIndexed(state.tasks) { i, task ->
                 val on = task.title == state.currentTask

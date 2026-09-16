@@ -29,6 +29,10 @@ type Db = {
 
 const empty = (): Db => ({ users: [], rooms: [], members: [], messages: [], tokens: [], claims: [], push: [] });
 
+export function normEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
 function filePath() {
   const dir = process.env.VERCEL ? "/tmp/aeko" : join(process.cwd(), "data");
   mkdirSync(dir, { recursive: true });
@@ -54,6 +58,21 @@ function load(): Db {
 
 function save(db: Db) {
   writeFileSync(filePath(), JSON.stringify(db, null, 2));
+}
+
+let fileChain = Promise.resolve();
+function withFile<T>(fn: (db: Db) => T, persist: boolean): Promise<T> {
+  const run = fileChain.then(() => {
+    const db = load();
+    const out = fn(db);
+    if (persist) save(db);
+    return out;
+  });
+  fileChain = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
 }
 
 function pg() {
@@ -86,42 +105,45 @@ export function dbKind() {
 }
 
 export async function upsertUser(email: string, publicKey: string) {
+  const who = normEmail(email);
   const sql = await ready();
   if (sql) {
-    await sql`INSERT INTO aeko_users (email, public_key) VALUES (${email}, ${publicKey})
+    await sql`INSERT INTO aeko_users (email, public_key) VALUES (${who}, ${publicKey})
       ON CONFLICT (email) DO UPDATE SET public_key = ${publicKey}`;
     return;
   }
-  const db = load();
-  const i = db.users.findIndex((u) => u.email === email);
-  if (i >= 0) db.users[i] = { email, publicKey };
-  else db.users.push({ email, publicKey });
-  save(db);
+  await withFile((db) => {
+    const i = db.users.findIndex((u) => u.email === who);
+    if (i >= 0) db.users[i] = { email: who, publicKey };
+    else db.users.push({ email: who, publicKey });
+  }, true);
 }
 
 export async function getUser(email: string) {
+  const who = normEmail(email);
   const sql = await ready();
   if (sql) {
-    const rows = await sql`SELECT email, public_key AS "publicKey" FROM aeko_users WHERE email = ${email}`;
+    const rows = await sql`SELECT email, public_key AS "publicKey" FROM aeko_users WHERE email = ${who}`;
     return (rows[0] as UserRow | undefined) ?? undefined;
   }
-  return load().users.find((u) => u.email === email);
+  return withFile((db) => db.users.find((u) => u.email === who), false);
 }
 
 export async function createRoom(title: string, owner: string, wrappedKey: string, wrapIv: string, peerPub: string) {
+  const who = normEmail(owner);
   const id = crypto.randomUUID();
   const sql = await ready();
   const createdAt = Date.now();
   if (sql) {
     await sql`INSERT INTO aeko_rooms (id, title, created_at) VALUES (${id}, ${title}, ${createdAt})`;
     await sql`INSERT INTO aeko_members (room_id, email, wrapped_key, wrap_iv, peer_pub)
-      VALUES (${id}, ${owner}, ${wrappedKey}, ${wrapIv}, ${peerPub})`;
+      VALUES (${id}, ${who}, ${wrappedKey}, ${wrapIv}, ${peerPub})`;
     return id;
   }
-  const db = load();
-  db.rooms.push({ id, title, createdAt });
-  db.members.push({ roomId: id, email: owner, wrappedKey, wrapIv, peerPub });
-  save(db);
+  await withFile((db) => {
+    db.rooms.push({ id, title, createdAt });
+    db.members.push({ roomId: id, email: who, wrappedKey, wrapIv, peerPub });
+  }, true);
   return id;
 }
 
@@ -131,43 +153,47 @@ export async function getRoom(id: string) {
     const rows = await sql`SELECT id, title, created_at AS "createdAt" FROM aeko_rooms WHERE id = ${id}`;
     return (rows[0] as RoomRow | undefined) ?? undefined;
   }
-  return load().rooms.find((r) => r.id === id);
+  return withFile((db) => db.rooms.find((r) => r.id === id), false);
 }
 
 export async function roomsFor(email: string) {
+  const who = normEmail(email);
   const sql = await ready();
   if (sql) {
     return (await sql`SELECT r.id, r.title, r.created_at AS "createdAt" FROM aeko_rooms r
-      JOIN aeko_members m ON m.room_id = r.id WHERE m.email = ${email} ORDER BY r.created_at DESC`) as RoomRow[];
+      JOIN aeko_members m ON m.room_id = r.id WHERE m.email = ${who} ORDER BY r.created_at DESC`) as RoomRow[];
   }
-  const db = load();
-  const ids = new Set(db.members.filter((m) => m.email === email).map((m) => m.roomId));
-  return db.rooms.filter((r) => ids.has(r.id));
+  return withFile((db) => {
+    const ids = new Set(db.members.filter((m) => m.email === who).map((m) => m.roomId));
+    return db.rooms.filter((r) => ids.has(r.id));
+  }, false);
 }
 
 export async function addMember(roomId: string, email: string, wrappedKey: string, wrapIv: string, peerPub: string) {
+  const who = normEmail(email);
   const sql = await ready();
   if (sql) {
     await sql`INSERT INTO aeko_members (room_id, email, wrapped_key, wrap_iv, peer_pub)
-      VALUES (${roomId}, ${email}, ${wrappedKey}, ${wrapIv}, ${peerPub})
+      VALUES (${roomId}, ${who}, ${wrappedKey}, ${wrapIv}, ${peerPub})
       ON CONFLICT (room_id, email) DO UPDATE SET wrapped_key = ${wrappedKey}, wrap_iv = ${wrapIv}, peer_pub = ${peerPub}`;
     return;
   }
-  const db = load();
-  if (!db.rooms.some((r) => r.id === roomId)) throw new Error("no room");
-  db.members = db.members.filter((m) => !(m.roomId === roomId && m.email === email));
-  db.members.push({ roomId, email, wrappedKey, wrapIv, peerPub });
-  save(db);
+  await withFile((db) => {
+    if (!db.rooms.some((r) => r.id === roomId)) throw new Error("no room");
+    db.members = db.members.filter((m) => !(m.roomId === roomId && m.email === who));
+    db.members.push({ roomId, email: who, wrappedKey, wrapIv, peerPub });
+  }, true);
 }
 
 export async function membership(roomId: string, email: string) {
+  const who = normEmail(email);
   const sql = await ready();
   if (sql) {
     const rows = await sql`SELECT room_id AS "roomId", email, wrapped_key AS "wrappedKey", wrap_iv AS "wrapIv", peer_pub AS "peerPub"
-      FROM aeko_members WHERE room_id = ${roomId} AND email = ${email}`;
+      FROM aeko_members WHERE room_id = ${roomId} AND email = ${who}`;
     return (rows[0] as MemberRow | undefined) ?? undefined;
   }
-  return load().members.find((m) => m.roomId === roomId && m.email === email);
+  return withFile((db) => db.members.find((m) => m.roomId === roomId && m.email === who), false);
 }
 
 export async function membersOf(roomId: string) {
@@ -176,20 +202,20 @@ export async function membersOf(roomId: string) {
     return (await sql`SELECT room_id AS "roomId", email, wrapped_key AS "wrappedKey", wrap_iv AS "wrapIv", peer_pub AS "peerPub"
       FROM aeko_members WHERE room_id = ${roomId}`) as MemberRow[];
   }
-  return load().members.filter((m) => m.roomId === roomId);
+  return withFile((db) => db.members.filter((m) => m.roomId === roomId), false);
 }
 
 export async function addMessage(row: Omit<MessageRow, "id" | "createdAt">) {
-  const msg: MessageRow = { ...row, id: crypto.randomUUID(), createdAt: Date.now() };
+  const msg: MessageRow = { ...row, from: normEmail(row.from), id: crypto.randomUUID(), createdAt: Date.now() };
   const sql = await ready();
   if (sql) {
     await sql`INSERT INTO aeko_messages (id, room_id, sender, iv, ciphertext, created_at)
       VALUES (${msg.id}, ${msg.roomId}, ${msg.from}, ${msg.iv}, ${msg.ciphertext}, ${msg.createdAt})`;
     return msg;
   }
-  const db = load();
-  db.messages.push(msg);
-  save(db);
+  await withFile((db) => {
+    db.messages.push(msg);
+  }, true);
   return msg;
 }
 
@@ -199,21 +225,25 @@ export async function messagesOf(roomId: string) {
     return (await sql`SELECT id, room_id AS "roomId", sender AS "from", iv, ciphertext, created_at AS "createdAt"
       FROM aeko_messages WHERE room_id = ${roomId} ORDER BY created_at`) as MessageRow[];
   }
-  return load().messages.filter((m) => m.roomId === roomId).sort((a, b) => a.createdAt - b.createdAt);
+  return withFile(
+    (db) => db.messages.filter((m) => m.roomId === roomId).sort((a, b) => a.createdAt - b.createdAt),
+    false,
+  );
 }
 
 export async function issueToken(email: string) {
+  const who = normEmail(email);
   const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
   const sql = await ready();
   if (sql) {
-    await sql`DELETE FROM aeko_tokens WHERE email = ${email}`;
-    await sql`INSERT INTO aeko_tokens (token, email) VALUES (${token}, ${email})`;
+    await sql`DELETE FROM aeko_tokens WHERE email = ${who}`;
+    await sql`INSERT INTO aeko_tokens (token, email) VALUES (${token}, ${who})`;
     return token;
   }
-  const db = load();
-  db.tokens = db.tokens.filter((t) => t.email !== email);
-  db.tokens.push({ token, email });
-  save(db);
+  await withFile((db) => {
+    db.tokens = db.tokens.filter((t) => t.email !== who);
+    db.tokens.push({ token, email: who });
+  }, true);
   return token;
 }
 
@@ -221,66 +251,69 @@ export async function emailForToken(token: string) {
   const sql = await ready();
   if (sql) {
     const rows = await sql`SELECT email FROM aeko_tokens WHERE token = ${token}`;
-    return (rows[0] as { email: string } | undefined)?.email;
+    const email = (rows[0] as { email: string } | undefined)?.email;
+    return email ? normEmail(email) : undefined;
   }
-  return load().tokens.find((t) => t.token === token)?.email;
+  const row = await withFile((db) => db.tokens.find((t) => t.token === token), false);
+  return row?.email ? normEmail(row.email) : undefined;
 }
 
 export async function issueClaim(email: string, name: string) {
-  const token = await issueToken(email);
+  const who = normEmail(email);
+  const token = await issueToken(who);
   const code = crypto.randomUUID().replace(/-/g, "").slice(0, 24);
   const exp = Date.now() + 120_000;
   const sql = await ready();
   if (sql) {
-    await sql`DELETE FROM aeko_claims WHERE email = ${email}`;
-    await sql`INSERT INTO aeko_claims (code, email, name, token, exp) VALUES (${code}, ${email}, ${name}, ${token}, ${exp})`;
-    return { code, email, name };
+    await sql`DELETE FROM aeko_claims WHERE email = ${who}`;
+    await sql`INSERT INTO aeko_claims (code, email, name, token, exp) VALUES (${code}, ${who}, ${name}, ${token}, ${exp})`;
+    return { code, email: who, name };
   }
-  const db = load();
-  db.claims = db.claims.filter((c) => c.email !== email);
-  db.claims.push({ code, email, name, token, exp });
-  save(db);
-  return { code, email, name };
+  await withFile((db) => {
+    db.claims = db.claims.filter((c) => c.email !== who);
+    db.claims.push({ code, email: who, name, token, exp });
+  }, true);
+  return { code, email: who, name };
 }
 
 export async function consumeClaim(code: string) {
   const now = Date.now();
   const sql = await ready();
   if (sql) {
-    const rows = await sql`SELECT email, name, token, exp FROM aeko_claims WHERE code = ${code}`;
-    const row = rows[0] as { email: string; name: string; token: string; exp: number } | undefined;
-    if (!row || Number(row.exp) < now) return null;
-    await sql`DELETE FROM aeko_claims WHERE code = ${code}`;
-    return { email: row.email, name: row.name, token: row.token };
+    const rows = await sql`DELETE FROM aeko_claims WHERE code = ${code} AND exp >= ${now} RETURNING email, name, token`;
+    const row = rows[0] as { email: string; name: string; token: string } | undefined;
+    return row ? { email: normEmail(row.email), name: row.name, token: row.token } : null;
   }
-  const db = load();
-  const row = db.claims.find((c) => c.code === code);
-  if (!row || row.exp < now) return null;
-  db.claims = db.claims.filter((c) => c.code !== code);
-  save(db);
-  return { email: row.email, name: row.name, token: row.token };
+  return withFile((db) => {
+    const row = db.claims.find((c) => c.code === code);
+    if (!row || row.exp < now) return null;
+    db.claims = db.claims.filter((c) => c.code !== code);
+    return { email: normEmail(row.email), name: row.name, token: row.token };
+  }, true);
 }
 
 export async function savePush(row: PushRow) {
+  const who = normEmail(row.email);
   const sql = await ready();
   if (sql) {
-    await sql`INSERT INTO aeko_push (endpoint, email, p256dh, auth) VALUES (${row.endpoint}, ${row.email}, ${row.p256dh}, ${row.auth})
-      ON CONFLICT (endpoint) DO UPDATE SET email = ${row.email}, p256dh = ${row.p256dh}, auth = ${row.auth}`;
+    await sql`INSERT INTO aeko_push (endpoint, email, p256dh, auth) VALUES (${row.endpoint}, ${who}, ${row.p256dh}, ${row.auth})
+      ON CONFLICT (endpoint) DO UPDATE SET email = ${who}, p256dh = ${row.p256dh}, auth = ${row.auth}`;
     return;
   }
-  const db = load();
-  db.push = db.push.filter((p) => p.endpoint !== row.endpoint);
-  db.push.push(row);
-  save(db);
+  await withFile((db) => {
+    db.push = db.push.filter((p) => p.endpoint !== row.endpoint);
+    db.push.push({ ...row, email: who });
+  }, true);
 }
 
-export async function pushForRoom(roomId: string) {
+export async function pushForRoom(roomId: string, exceptEmail?: string) {
   const people = await membersOf(roomId);
-  const emails = new Set(people.map((p) => p.email));
+  const skip = exceptEmail ? normEmail(exceptEmail) : "";
+  const emails = new Set(people.map((p) => normEmail(p.email)).filter((e) => e && e !== skip));
   const sql = await ready();
   if (sql) {
     const rows = (await sql`SELECT endpoint, email, p256dh, auth FROM aeko_push`) as PushRow[];
-    return rows.filter((r) => emails.has(r.email));
+    return rows.filter((r) => emails.has(normEmail(r.email)));
   }
-  return load().push.filter((p) => emails.has(p.email));
+  return withFile((db) => db.push.filter((p) => emails.has(normEmail(p.email))), false);
 }

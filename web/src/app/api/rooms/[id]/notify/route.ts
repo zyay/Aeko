@@ -11,7 +11,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const room = await getRoom(id);
   const title = room?.title || "task";
   const payload = { title: `New activity in ${title}` };
-  const subs = await pushForRoom(id);
+  const subs = (await pushForRoom(id, email));
   await sendRoomPushes(subs, payload);
   return NextResponse.json({ ok: true, title: payload.title });
 }
