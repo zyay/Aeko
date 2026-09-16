@@ -1,5 +1,6 @@
 import { auth, signIn, signOut } from "@/auth";
 import { redirect } from "next/navigation";
+import { BeamFrame } from "@/components/beam-frame";
 
 export default async function LoginPage({
   searchParams,
@@ -12,6 +13,7 @@ export default async function LoginPage({
 
   return (
     <main className="auth">
+      <BeamFrame>
       <div className="authcard">
         <a href="/" style={{ color: "#8b8b8b" }}>
           ← Back
@@ -51,6 +53,7 @@ export default async function LoginPage({
           </>
         )}
       </div>
+      </BeamFrame>
     </main>
   );
 }

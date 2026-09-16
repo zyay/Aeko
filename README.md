@@ -31,6 +31,11 @@ Without Postgres the API falls back to a JSON file (`/tmp` on Vercel — not dur
 
 Local: `cd web && npm install && npm run dev`
 
+## Libraries.dev + mascot
+
+Official packages on web: `border-beam`, `thinking-orbs`, `liquid-gooey`, `img-fx` (+ `three`), `voice-beam`. Mascot is `@bible-strong/avatar-react` `createAvatar` + Strobi `.avatar.json` (AGPL).
+
+
 ## Brains
 
 API key + URL, own `/v1` server, or GGUF on Android. Test key never sent to Vercel (proxy off unless `LYAN_LLM_PROXY=1`).

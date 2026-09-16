@@ -1,7 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { Blob, BLOBS } from "@/components/blob";
+import { BorderBeam } from "border-beam";
+import { ThinkingOrb } from "thinking-orbs";
+import { Liquid } from "liquid-gooey";
+import { ImageGeneration } from "img-fx";
+import { VoiceBeam, useMicrophone } from "voice-beam";
+import { Strobi } from "@/mascot/strobi";
 import {
   decryptMessage,
   encryptMessage,
@@ -36,6 +41,8 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
   const [status, setStatus] = useState("");
   const [sheet, setSheet] = useState<Line | null>(null);
   const [busy, setBusy] = useState(false);
+  const [goo, setGoo] = useState(false);
+  const mic = useMicrophone();
   const wide = typeof window !== "undefined" && window.innerWidth > 840;
 
   useEffect(() => {
@@ -192,9 +199,35 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
       <div className="phone-shell">
         <div className="phone splash">
           <Top />
-          {BLOBS.map((b, i) => (
-            <Blob key={i} color={b.color} size={b.s} style={{ left: b.x, top: b.y }} />
-          ))}
+          <ImageGeneration
+            preset="pixels-organic"
+            theme="light"
+            images={["/agents/a.svg", "/agents/b.svg"]}
+            autoReveal
+            className="splash-fx"
+          >
+            <div className="splash-canvas" />
+          </ImageGeneration>
+          <Liquid blur={6} contrast={18} fill="#fff" shadow="0 2px 6px rgba(0,0,0,.08)" className="splash-goo">
+            <Liquid.Item x={-70} y={40} transition="bouncy">
+              <div className="round-orb">
+                <ThinkingOrb state="breathing" size={64} theme="light" />
+              </div>
+            </Liquid.Item>
+            <Liquid.Item x={80} y={-20} transition="bouncy" delay={40}>
+              <div className="round-orb">
+                <ThinkingOrb state="searching" size={64} theme="light" />
+              </div>
+            </Liquid.Item>
+            <Liquid.Item x={-20} y={120} transition="bouncy" delay={80}>
+              <div className="round-orb">
+                <ThinkingOrb state="weaving" size={64} theme="light" />
+              </div>
+            </Liquid.Item>
+          </Liquid>
+          <div className="splash-mascot">
+            <Strobi animation="sleeping" size={180} />
+          </div>
           <div className="splash-copy">
             <h1>Lyan</h1>
             <p>Your team of always-on agents that finish the work.</p>
@@ -217,7 +250,7 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
           <Top />
           <h1>Meet Your First Bot</h1>
           <div className="meet-hero">
-            <Blob color="#fb923c" size={168} style={{ position: "relative" }} />
+            <Strobi animation="idle" size={220} />
             <h2>Signal Monitor</h2>
             <p className="sub">Watches sites, dashboards, and feeds for changes — then writes the brief.</p>
           </div>
@@ -265,7 +298,11 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
           <input className="field" style={{ margin: "0 16px 8px", width: "calc(100% - 32px)" }} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Task name" />
           {(rooms.length ? rooms : [{ id: "local", title: "Signal Monitor" }]).map((r, i) => (
             <button key={r.id} className="taskrow" type="button" onClick={() => setRoomId(r.id)}>
-              <Blob color={["#22c55e", "#fb923c", "#111", "#a3a3a3", "#f97316"][i % 5]} size={40} style={{ position: "relative" }} />
+              <ThinkingOrb
+                state={(["breathing", "searching", "working", "composing", "listening"] as const)[i % 5]}
+                size={64}
+                theme="light"
+              />
               <div>
                 <div className="title">
                   {r.title} <span className="meta">Task</span>
@@ -281,7 +318,7 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
             <Top />
             <div className="thread-head">
               <button type="button" onClick={() => setRoomId(null)}>←</button>
-              <Blob color="#22c55e" size={32} style={{ position: "relative" }} />
+              <Strobi animation={busy ? "thinking" : "idle"} size={48} />
               <strong>{current}</strong>
             </div>
             <div className="thread-body">
@@ -308,8 +345,27 @@ export function LyanApp({ userEmail }: { userEmail: string | null }) {
                 run(draft.trim());
               }}
             >
-              <button className="plus" type="button" onClick={addPerson}>+</button>
-              <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`Ask ${current}`} />
+              <div className="goo-wrap">
+                <Liquid blur={6} contrast={18} fill="#f3f3f4">
+                  <Liquid.Item x={0} y={0}>
+                    <button className="plus" type="button" onClick={() => setGoo((v) => !v)}>
+                      +
+                    </button>
+                  </Liquid.Item>
+                  {goo && (
+                    <Liquid.Item x={0} y={-44} transition="bouncy">
+                      <button className="plus" type="button" onClick={() => void mic.start()}>
+                        mic
+                      </button>
+                    </Liquid.Item>
+                  )}
+                </Liquid>
+              </div>
+              <VoiceBeam stream={mic.stream} processing={busy} theme="light" type="default" colorVariant="colorful">
+                <BorderBeam size="md" colorVariant="colorful" strength={0.65} theme="light" active={!busy}>
+                  <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`Ask ${current}`} />
+                </BorderBeam>
+              </VoiceBeam>
             </form>
             {userEmail && (
               <div style={{ padding: "0 16px 16px", display: "flex", gap: 8 }}>
