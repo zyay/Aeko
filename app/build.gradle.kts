@@ -14,7 +14,7 @@ android {
     val storePass = System.getenv("LYAN_KEYSTORE_PASSWORD") ?: "lyan-release"
     val alias = System.getenv("LYAN_KEY_ALIAS") ?: "lyan"
     val keyPass = System.getenv("LYAN_KEY_PASSWORD") ?: "lyan-release"
-    val authUrl = System.getenv("AEKO_AUTH_URL") ?: System.getenv("LYAN_AUTH_URL") ?: "https://lyan.vercel.app"
+    val authUrl = System.getenv("AEKO_AUTH_URL") ?: System.getenv("LYAN_AUTH_URL") ?: "https://aeko.vercel.app"
 
     defaultConfig {
         applicationId = "com.zyay.aeko"
