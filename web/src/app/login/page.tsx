@@ -1,6 +1,5 @@
 import { auth, signIn, signOut } from "@/auth";
 import { redirect } from "next/navigation";
-import { DynStrobi } from "@/components/dyn-fx";
 import { AppFooter } from "@/components/ui-primitives";
 
 export default async function LoginPage({
@@ -17,12 +16,12 @@ export default async function LoginPage({
     <main className="aeko-root onboard">
       <div className="auth-shell">
         <span className="onboard-badge">Identity only · keys stay local</span>
-        <div className="auth-hero">
-          <DynStrobi animation="idle" size={140} />
+        <div className="auth-hero-mark" aria-hidden>
+          A
         </div>
         <div className="authcard">
           <a href="/" className="back">
-            ← Back to workspace
+            ← Back to dashboard
           </a>
           <h1>Sign in to Aeko</h1>
           <p>GitHub or Google for sync. Your LLM keys never hit Vercel — only encrypted room ciphertext does.</p>
@@ -59,7 +58,7 @@ export default async function LoginPage({
               </form>
             </div>
           )}
-          <p className="tiny auth-foot">After sign-in you land in the encrypted task inbox.</p>
+          <p className="tiny auth-foot">After sign-in you land in the encrypted task dashboard.</p>
         </div>
         <AppFooter />
       </div>
