@@ -1,12 +1,10 @@
 import { termsText } from "@/legal";
+import { LegalPage } from "@/components/ui-primitives";
 
 export default function TermsPage() {
   return (
-    <main className="legal">
-      <div className="legalbox">
-        <a className="back" href="/">← Back</a>
-        <pre>{termsText}</pre>
-      </div>
-    </main>
+    <LegalPage title="Terms of Use">
+      <p>{termsText}</p>
+    </LegalPage>
   );
 }

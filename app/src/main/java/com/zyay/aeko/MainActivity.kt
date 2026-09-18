@@ -104,7 +104,7 @@ private fun AekoRoot(viewModel: ChatViewModel) {
             viewModel = viewModel,
             onBack = { route = from },
             onModels = { from = AekoRoute.Settings; route = AekoRoute.Models },
-            onSignIn = {}
+            onSignIn = { route = AekoRoute.Inbox }
         )
         AekoRoute.Models -> ModelsScreen(viewModel.models) { route = from }
         AekoRoute.Devices -> DevicesScreen(

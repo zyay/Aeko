@@ -39,7 +39,12 @@ data class ChatMessage(
     val remoteId: String? = null
 )
 
-data class TaskItem(val title: String, val roomId: String? = null)
+data class TaskItem(
+    val title: String,
+    val roomId: String? = null,
+    val preview: String = "",
+    val updatedAt: Long = 0L
+)
 
 data class ChatUiState(
     val messages: List<ChatMessage> = emptyList(),
@@ -122,7 +127,13 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     private fun persist() {
         val json = JSONArray()
         _state.value.tasks.forEach { t ->
-            json.put(JSONObject().put("title", t.title).put("roomId", t.roomId ?: JSONObject.NULL))
+            json.put(
+                JSONObject()
+                    .put("title", t.title)
+                    .put("roomId", t.roomId ?: JSONObject.NULL)
+                    .put("preview", t.preview)
+                    .put("updatedAt", t.updatedAt)
+            )
         }
         prefs.edit()
             .putString("tasks", json.toString())
@@ -137,7 +148,14 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         val tasks = buildList {
             for (i in 0 until arr.length()) {
                 val o = arr.optJSONObject(i) ?: continue
-                add(TaskItem(o.optString("title"), o.optString("roomId").ifBlank { null }))
+                add(
+                    TaskItem(
+                        o.optString("title"),
+                        o.optString("roomId").ifBlank { null },
+                        o.optString("preview"),
+                        o.optLong("updatedAt")
+                    )
+                )
             }
         }
         if (tasks.isEmpty()) return
@@ -148,6 +166,35 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onDraft(value: String) {
         _state.update { it.copy(draft = value) }
+    }
+
+    fun replyTo(text: String) {
+        _state.update { it.copy(draft = "> ${text.take(200)}\n") }
+    }
+
+    fun regenerateFrom(messageId: Long) {
+        val msgs = _state.value.messages
+        val idx = msgs.indexOfFirst { it.id == messageId }
+        if (idx <= 0) return
+        for (i in idx - 1 downTo 0) {
+            if (msgs[i].isUser) {
+                send(msgs[i].text)
+                return
+            }
+        }
+    }
+
+    private fun touchTask(preview: String) {
+        val title = _state.value.currentTask
+        val now = System.currentTimeMillis()
+        _state.update { ui ->
+            ui.copy(
+                tasks = ui.tasks.map { t ->
+                    if (t.title == title) t.copy(preview = preview.take(120), updatedAt = now) else t
+                }
+            )
+        }
+        persist()
     }
 
     fun toggleAgent() {
@@ -299,6 +346,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
         postPlain(prompt)
+        touchTask(prompt)
         stopFlag = false
         sendJob = viewModelScope.launch {
             if (_state.value.agentMode) {
@@ -361,6 +409,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
             postPlain(_state.value.messages.find { it.id == id }?.text.orEmpty())
+            touchTask(_state.value.messages.find { it.id == id }?.text.orEmpty())
             _state.update { it.copy(phase = EnginePhase.Idle) }
         }
     }
@@ -411,7 +460,14 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         val mapped = buildList {
             for (i in 0 until rooms.length()) {
                 val o = rooms.optJSONObject(i) ?: continue
-                add(TaskItem(o.optString("title"), o.optString("id")))
+                add(
+                    TaskItem(
+                        o.optString("title"),
+                        o.optString("id"),
+                        preview = "",
+                        updatedAt = o.optLong("lastAt", o.optLong("createdAt"))
+                    )
+                )
             }
         }
         if (mapped.isEmpty()) return
@@ -446,8 +502,15 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 } else {
                     incoming.ifEmpty { ui.messages }
                 }
-                ui.copy(members = snap.members, messages = merged.distinctBy { it.remoteId ?: "l-${it.id}" })
+                val last = merged.lastOrNull()
+                val tasks = if (last != null) {
+                    ui.tasks.map { t ->
+                        if (t.title == ui.currentTask) t.copy(preview = last.text.take(120), updatedAt = System.currentTimeMillis()) else t
+                    }
+                } else ui.tasks
+                ui.copy(members = snap.members, messages = merged.distinctBy { it.remoteId ?: "l-${it.id}" }, tasks = tasks)
             }
+            if (!generating) persist()
             val lastNew = newRemote.lastOrNull()
             if (notify && !firstSync && lastNew != null && !lastNew.isUser) {
                 ActivityNotify.show(getApplication(), _state.value.currentTask)

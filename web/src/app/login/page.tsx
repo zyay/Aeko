@@ -1,6 +1,7 @@
 import { auth, signIn, signOut } from "@/auth";
 import { redirect } from "next/navigation";
-import { BeamFrame } from "@/components/beam-frame";
+import { DynStrobi } from "@/components/dyn-fx";
+import { AppFooter } from "@/components/ui-primitives";
 
 export default async function LoginPage({
   searchParams,
@@ -10,50 +11,58 @@ export default async function LoginPage({
   const session = await auth();
   const { android } = await searchParams;
   if (session?.user && android === "1") redirect("/android");
+  if (session?.user && android !== "1") redirect("/");
 
   return (
-    <main className="auth">
-      <BeamFrame>
-      <div className="authcard">
-        <a href="/" className="back">
-          ← Back
-        </a>
-        <h1>Sign in</h1>
-        <p>GitHub or Google via Auth.js. Identity only — your LLM key never hits Vercel.</p>
-        {session?.user ? (
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/" });
-            }}
-          >
-            <p className="ok">Signed in as {session.user.email}</p>
-            <button type="submit">Sign out</button>
-          </form>
-        ) : (
-          <>
+    <main className="aeko-root onboard">
+      <div className="auth-shell">
+        <span className="onboard-badge">Identity only · keys stay local</span>
+        <div className="auth-hero">
+          <DynStrobi animation="idle" size={140} />
+        </div>
+        <div className="authcard">
+          <a href="/" className="back">
+            ← Back to workspace
+          </a>
+          <h1>Sign in to Aeko</h1>
+          <p>GitHub or Google for sync. Your LLM keys never hit Vercel — only encrypted room ciphertext does.</p>
+          {session?.user ? (
             <form
+              className="auth-forms"
               action={async () => {
                 "use server";
-                await signIn("github", { redirectTo: android === "1" ? "/android" : "/" });
+                await signOut({ redirectTo: "/" });
               }}
             >
-              <button type="submit">Continue with GitHub</button>
+              <p className="ok">Signed in as {session.user.email}</p>
+              <button type="submit">Sign out</button>
             </form>
-            <form
-              action={async () => {
-                "use server";
-                await signIn("google", { redirectTo: android === "1" ? "/android" : "/" });
-              }}
-            >
-              <button className="alt" type="submit">
-                Continue with Google
-              </button>
-            </form>
-          </>
-        )}
+          ) : (
+            <div className="auth-forms">
+              <form
+                action={async () => {
+                  "use server";
+                  await signIn("github", { redirectTo: android === "1" ? "/android" : "/" });
+                }}
+              >
+                <button type="submit">Continue with GitHub</button>
+              </form>
+              <form
+                action={async () => {
+                  "use server";
+                  await signIn("google", { redirectTo: android === "1" ? "/android" : "/" });
+                }}
+              >
+                <button className="alt" type="submit">
+                  Continue with Google
+                </button>
+              </form>
+            </div>
+          )}
+          <p className="tiny auth-foot">After sign-in you land in the encrypted task inbox.</p>
+        </div>
+        <AppFooter />
       </div>
-      </BeamFrame>
     </main>
   );
 }

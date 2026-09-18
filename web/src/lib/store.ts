@@ -4,6 +4,7 @@ import { join } from "path";
 
 export type UserRow = { email: string; publicKey: string };
 export type RoomRow = { id: string; title: string; createdAt: number };
+export type RoomSummary = RoomRow & { lastAt: number; messageCount: number };
 export type MemberRow = { roomId: string; email: string; wrappedKey: string; wrapIv: string; peerPub: string };
 export type MessageRow = {
   id: string;
@@ -157,15 +158,33 @@ export async function getRoom(id: string) {
 }
 
 export async function roomsFor(email: string) {
+  const rows = await roomsSummaryFor(email);
+  return rows.map(({ id, title, createdAt }) => ({ id, title, createdAt }));
+}
+
+export async function roomsSummaryFor(email: string) {
   const who = normEmail(email);
   const sql = await ready();
   if (sql) {
-    return (await sql`SELECT r.id, r.title, r.created_at AS "createdAt" FROM aeko_rooms r
-      JOIN aeko_members m ON m.room_id = r.id WHERE m.email = ${who} ORDER BY r.created_at DESC`) as RoomRow[];
+    return (await sql`SELECT r.id, r.title, r.created_at AS "createdAt",
+      COALESCE(MAX(m.created_at), r.created_at) AS "lastAt",
+      COUNT(m.id)::int AS "messageCount"
+      FROM aeko_rooms r
+      JOIN aeko_members mem ON mem.room_id = r.id AND mem.email = ${who}
+      LEFT JOIN aeko_messages m ON m.room_id = r.id
+      GROUP BY r.id, r.title, r.created_at
+      ORDER BY "lastAt" DESC`) as RoomSummary[];
   }
   return withFile((db) => {
     const ids = new Set(db.members.filter((m) => m.email === who).map((m) => m.roomId));
-    return db.rooms.filter((r) => ids.has(r.id));
+    return db.rooms
+      .filter((r) => ids.has(r.id))
+      .map((r) => {
+        const msgs = db.messages.filter((m) => m.roomId === r.id);
+        const lastAt = msgs.length ? Math.max(...msgs.map((m) => m.createdAt)) : r.createdAt;
+        return { ...r, lastAt, messageCount: msgs.length };
+      })
+      .sort((a, b) => b.lastAt - a.lastAt);
   }, false);
 }
 

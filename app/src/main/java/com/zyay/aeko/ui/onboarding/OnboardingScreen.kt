@@ -45,6 +45,8 @@ import com.zyay.aeko.brain.BrainStore
 import com.zyay.aeko.engine.LlmClient
 import com.zyay.aeko.ui.chat.ChatViewModel
 import com.zyay.aeko.ui.components.BlobAvatar
+import com.zyay.aeko.ui.components.ThinkingOrb
+import com.zyay.aeko.ui.components.OrbState
 import com.zyay.aeko.ui.theme.BlobBlue
 import com.zyay.aeko.ui.theme.BlobGreen
 import com.zyay.aeko.ui.theme.BlobOrange
@@ -84,35 +86,45 @@ fun OnboardingScreen(
         unfocusedBorderColor = AekoLine
     )
 
-    Box(Modifier.fillMaxSize().background(AekoBlack).statusBarsPadding()) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(AekoBlack)
+            .statusBarsPadding()
+    ) {
         if (step == 0) {
             FloatingBlobs()
             Column(Modifier.fillMaxSize().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Highlight", color = AekoMuted, fontSize = 13.sp, modifier = Modifier.align(Alignment.Start))
                 Spacer(Modifier.weight(1f))
-                Text("Aeko", color = AekoInk, fontSize = 42.sp, fontWeight = FontWeight.SemiBold)
-                Text("Your team of always-on agents that finish the work.", color = AekoMuted, textAlign = TextAlign.Center)
+                Text("Aeko", color = AekoInk, fontSize = 44.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp)
+                Text(
+                    "Your team of always-on agents that finish the work.",
+                    color = AekoMuted,
+                    textAlign = TextAlign.Center,
+                    fontSize = 16.sp,
+                    lineHeight = 24.sp,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+                )
                 Spacer(Modifier.weight(1f))
                 Pill("Sign in") { viewModel.auth.signIn(context) }
                 TextButton(onClick = { step = 1 }) { Text("Continue local-only", color = AekoMuted) }
             }
         } else if (step == 1) {
             Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Highlight", color = AekoMuted, fontSize = 13.sp, modifier = Modifier.align(Alignment.Start))
-                Spacer(Modifier.height(28.dp))
-                Text("Meet Your First Bot", color = AekoInk, fontSize = 32.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+                Spacer(Modifier.height(32.dp))
+                Text("Meet Your First Bot", color = AekoInk, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
                 Spacer(Modifier.weight(1f))
-                BlobAvatar(BlobOrange, 168.dp)
+                ThinkingOrb(size = 168.dp, state = OrbState.Idle)
                 Spacer(Modifier.height(20.dp))
                 Text("Signal Monitor", color = AekoInk, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
-                Text("Watches sites, dashboards, and feeds for changes.", color = AekoMuted, textAlign = TextAlign.Center)
+                Text("Watches sites, dashboards, and feeds for changes.", color = AekoMuted, textAlign = TextAlign.Center, lineHeight = 22.sp)
                 Spacer(Modifier.weight(1f))
-                Pill("Start Chat") {
+                Pill("Start workspace") {
                     brain.onboarded = true
                     viewModel.addTask("Signal Monitor")
                     onContinue()
                 }
-                TextButton(onClick = { step = 2 }) { Text("Create My Own", color = AekoMuted) }
+                TextButton(onClick = { step = 2 }) { Text("Configure brain", color = AekoMuted) }
             }
         } else {
             Column(Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
