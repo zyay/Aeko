@@ -1,4 +1,51 @@
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
+import type { Line } from "@/components/aeko-app-types";
+
+const COLORS = ["#fb923c", "#38bdf8", "#a78bfa", "#22c55e", "#f43f5e", "#2dd4bf"];
+
+export function taskColor(id: string) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return COLORS[h % COLORS.length]!;
+}
+
+export function MessageRow({
+  line,
+  busy,
+  onContextMenu,
+}: {
+  line: Line;
+  busy?: boolean;
+  onContextMenu: (e: MouseEvent) => void;
+}) {
+  const streaming = busy && line.role === "aeko" && !line.text;
+  if (line.role === "tool") {
+    return (
+      <div className="msg-tool" onContextMenu={onContextMenu}>
+        {line.text}
+      </div>
+    );
+  }
+  return (
+    <div className={`msg-line ${line.role}${streaming ? " streaming" : ""}`} onContextMenu={onContextMenu}>
+      <div className="msg-bubble">{line.text || ""}</div>
+    </div>
+  );
+}
+
+export function AppFooter() {
+  return (
+    <footer className="app-footer">
+      <a href="/privacy">Privacy</a>
+      <span aria-hidden>·</span>
+      <a href="/terms">Terms</a>
+    </footer>
+  );
+}
+
+export function AgentDot({ busy }: { busy?: boolean }) {
+  return <span className={`agent-dot${busy ? " busy" : ""}`} aria-hidden />;
+}
 
 export function IconBack() {
   return (
@@ -19,19 +66,12 @@ export function IconPlus() {
 export function IconSettings() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
       <path
-        d="M12 15a3 3 0 100-6 3 3 0 000 6z"
+        d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   );
@@ -63,14 +103,8 @@ export function IconMic() {
 export function IconFile() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -78,61 +112,8 @@ export function IconFile() {
 export function IconSend() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path
-        d="M22 2l-7 20-4-9-9-4 20-7z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
-  );
-}
-
-type Line = { id: string; role: "user" | "aeko" | "tool"; text: string };
-
-export function MessageRow({
-  line,
-  busy,
-  userLabel,
-  onContextMenu,
-}: {
-  line: Line;
-  busy?: boolean;
-  userLabel: string;
-  onContextMenu: (e: React.MouseEvent) => void;
-}) {
-  const streaming = busy && line.role === "aeko" && !line.text;
-  const label = line.role === "user" ? userLabel : line.role === "tool" ? "Tool" : "Aeko";
-  const avatar = line.role === "user" ? userLabel[0]?.toUpperCase() : line.role === "tool" ? "⌘" : "✦";
-
-  return (
-    <article
-      className={`msg-row ${line.role}${streaming ? " streaming" : ""}`}
-      onContextMenu={onContextMenu}
-    >
-      <div className={`msg-avatar ${line.role}`}>{avatar}</div>
-      <div className="msg-stack">
-        <div className="msg-meta">
-          <span className="msg-label">{label}</span>
-          {line.role === "tool" && <span className="msg-tag">search / fetch</span>}
-        </div>
-        <div className={`msg-bubble ${line.role}`}>
-          {line.text || (streaming ? "" : "")}
-        </div>
-      </div>
-    </article>
-  );
-}
-
-export function AppFooter() {
-  return (
-    <footer className="app-footer">
-      <a href="/privacy">Privacy</a>
-      <span>·</span>
-      <a href="/terms">Terms</a>
-    </footer>
   );
 }
 
@@ -140,9 +121,7 @@ export function LegalPage({ title, children, backHref = "/" }: { title: string; 
   return (
     <main className="aeko-root legal-page">
       <div className="legal-shell">
-        <a className="back" href={backHref}>
-          ← Back
-        </a>
+        <a className="back" href={backHref}>← Back</a>
         <div className="legalbox">
           <h1>{title}</h1>
           <div className="legal-prose">{children}</div>
@@ -159,13 +138,8 @@ export function AndroidHandoff({ deepLink }: { deepLink: string }) {
       <div className="android-card">
         <div className="android-spinner" aria-hidden />
         <h1>Opening Aeko on Android</h1>
-        <p>Your sign-in code is ready. If nothing happens, tap the button below.</p>
-        <a className="blackpill" href={deepLink}>
-          Open Android app
-        </a>
-        <p className="tiny auth-foot">
-          Deep link: <code>{deepLink.slice(0, 48)}…</code>
-        </p>
+        <p>Your sign-in code is ready. If nothing happens, tap below.</p>
+        <a className="blackpill" href={deepLink}>Open Android app</a>
       </div>
     </main>
   );
