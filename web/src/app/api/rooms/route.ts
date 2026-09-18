@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireEmail } from "@/lib/session";
-import { createRoom, roomsFor } from "@/lib/store";
+import { createRoom, roomsSummaryFor } from "@/lib/store";
 
 export async function GET(req: Request) {
   const email = await requireEmail(req);
   if (!email) return NextResponse.json({ error: "auth" }, { status: 401 });
-  return NextResponse.json({ rooms: await roomsFor(email) });
+  return NextResponse.json({ rooms: await roomsSummaryFor(email) });
 }
 
 export async function POST(req: Request) {

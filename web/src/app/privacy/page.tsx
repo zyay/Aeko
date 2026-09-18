@@ -1,12 +1,10 @@
 import { privacyText } from "@/legal";
+import { LegalPage } from "@/components/ui-primitives";
 
 export default function PrivacyPage() {
   return (
-    <main className="legal">
-      <div className="legalbox">
-        <a className="back" href="/">← Back</a>
-        <pre>{privacyText}</pre>
-      </div>
-    </main>
+    <LegalPage title="Privacy Policy">
+      <p>{privacyText}</p>
+    </LegalPage>
   );
 }
