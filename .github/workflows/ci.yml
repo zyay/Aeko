@@ -33,6 +33,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci --legacy-peer-deps
       - run: npm run check-crypto
+      - run: npm run test:unit
       - run: npm run build
 
   android:

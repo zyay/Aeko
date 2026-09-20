@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireEmail } from "@/lib/session";
 import { addMessage, membership, membersOf, messagesOf } from "@/lib/store";
+import { pushRoomEvent } from "@/lib/room-events";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const email = await requireEmail(req);
@@ -21,8 +23,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!email) return NextResponse.json({ error: "auth" }, { status: 401 });
   const { id } = await ctx.params;
   if (!(await membership(id, email))) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!rateLimit(`msg:${email}`, 120)) return NextResponse.json({ error: "rate" }, { status: 429 });
   const body = (await req.json()) as { iv?: string; ciphertext?: string };
   if (!body.iv || !body.ciphertext) return NextResponse.json({ error: "fields" }, { status: 400 });
   const msg = await addMessage({ roomId: id, from: email, iv: body.iv, ciphertext: body.ciphertext });
+  pushRoomEvent(id, { type: "message.new", at: msg.createdAt, messageId: msg.id });
   return NextResponse.json(msg);
 }

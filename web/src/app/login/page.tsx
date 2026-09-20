@@ -1,67 +1,61 @@
-import { auth, signIn, signOut } from "@/auth";
+import { auth, signIn } from "@/auth";
 import { redirect } from "next/navigation";
-import { AppFooter } from "@/components/ui-primitives";
+import { AuthGateShell } from "@/components/auth-gate-shell";
+import { AppFooter, BrandMark } from "@/components/ui-primitives";
+import { GoogleMark, Icon, Icons } from "@/components/icons";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ android?: string }>;
+  searchParams: Promise<{ android?: string; callbackUrl?: string }>;
 }) {
   const session = await auth();
-  const { android } = await searchParams;
-  if (session?.user && android === "1") redirect("/android");
-  if (session?.user && android !== "1") redirect("/");
+  const { android, callbackUrl } = await searchParams;
+  const after = callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : android === "1" ? "/android" : "/";
+
+  if (session?.user) redirect(after);
 
   return (
-    <main className="aeko-root onboard">
-      <div className="auth-shell">
-        <span className="onboard-badge">Identity only · keys stay local</span>
-        <div className="auth-hero-mark" aria-hidden>
-          A
+    <>
+      <AuthGateShell>
+        <div className="authcard-head">
+          <BrandMark size={40} />
+          <div>
+            <h1>Sign in to continue</h1>
+            <p>Your workspace, agents, and encrypted rooms are available after authentication.</p>
+          </div>
         </div>
-        <div className="authcard">
-          <a href="/" className="back">
-            ← Back to dashboard
-          </a>
-          <h1>Sign in to Aeko</h1>
-          <p>GitHub or Google for sync. Your LLM keys never hit Vercel — only encrypted room ciphertext does.</p>
-          {session?.user ? (
-            <form
-              className="auth-forms"
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/" });
-              }}
-            >
-              <p className="ok">Signed in as {session.user.email}</p>
-              <button type="submit">Sign out</button>
-            </form>
-          ) : (
-            <div className="auth-forms">
-              <form
-                action={async () => {
-                  "use server";
-                  await signIn("github", { redirectTo: android === "1" ? "/android" : "/" });
-                }}
-              >
-                <button type="submit">Continue with GitHub</button>
-              </form>
-              <form
-                action={async () => {
-                  "use server";
-                  await signIn("google", { redirectTo: android === "1" ? "/android" : "/" });
-                }}
-              >
-                <button className="alt" type="submit">
-                  Continue with Google
-                </button>
-              </form>
-            </div>
-          )}
-          <p className="tiny auth-foot">After sign-in you land in the encrypted task dashboard.</p>
+        <div className="auth-forms">
+          <form
+            action={async () => {
+              "use server";
+              await signIn("github", { redirectTo: after });
+            }}
+          >
+            <button type="submit">
+              <Icon icon={Icons.brand} size={18} aria-hidden />
+              Continue with GitHub
+            </button>
+          </form>
+          <form
+            action={async () => {
+              "use server";
+              await signIn("google", { redirectTo: after });
+            }}
+          >
+            <button className="alt" type="submit">
+              <GoogleMark size={18} />
+              Continue with Google
+            </button>
+          </form>
         </div>
+        <p className="tiny auth-foot">
+          OAuth is identity only. Model API keys and message content never leave this device unencrypted.
+        </p>
+      </AuthGateShell>
+      <footer className="auth-gate-footer">
         <AppFooter />
-      </div>
-    </main>
+      </footer>
+    </>
   );
 }

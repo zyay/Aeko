@@ -250,6 +250,42 @@ export async function messagesOf(roomId: string) {
   );
 }
 
+export async function updateRoomTitle(roomId: string, email: string, title: string) {
+  const who = normEmail(email);
+  if (!(await membership(roomId, who))) return false;
+  const next = title.trim().slice(0, 120);
+  if (!next) return false;
+  const sql = await ready();
+  if (sql) {
+    await sql`UPDATE aeko_rooms SET title = ${next} WHERE id = ${roomId}`;
+    return true;
+  }
+  return withFile((db) => {
+    const room = db.rooms.find((r) => r.id === roomId);
+    if (!room) return false;
+    room.title = next;
+    return true;
+  }, true);
+}
+
+export async function deleteRoom(roomId: string, email: string) {
+  const who = normEmail(email);
+  if (!(await membership(roomId, who))) return false;
+  const sql = await ready();
+  if (sql) {
+    await sql`DELETE FROM aeko_messages WHERE room_id = ${roomId}`;
+    await sql`DELETE FROM aeko_members WHERE room_id = ${roomId}`;
+    await sql`DELETE FROM aeko_rooms WHERE id = ${roomId}`;
+    return true;
+  }
+  return withFile((db) => {
+    db.messages = db.messages.filter((m) => m.roomId !== roomId);
+    db.members = db.members.filter((m) => m.roomId !== roomId);
+    db.rooms = db.rooms.filter((r) => r.id !== roomId);
+    return true;
+  }, true);
+}
+
 export async function issueToken(email: string) {
   const who = normEmail(email);
   const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");

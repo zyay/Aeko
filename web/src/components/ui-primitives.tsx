@@ -1,7 +1,10 @@
 import type { MouseEvent, ReactNode } from "react";
 import type { Line } from "@/components/aeko-app-types";
+import { MarkdownContent } from "@/components/markdown-content";
+import { getAgent } from "@/lib/agents";
+import { Icon, Icons } from "@/components/icons";
 
-const COLORS = ["#fb923c", "#38bdf8", "#a78bfa", "#22c55e", "#f43f5e", "#2dd4bf"];
+const COLORS = ["#5e5ce6", "#0071e3", "#64d2ff", "#30b0c7", "#ac8e68", "#86868b"];
 
 export function taskColor(id: string) {
   let h = 0;
@@ -21,14 +24,31 @@ export function MessageRow({
   const streaming = busy && line.role === "aeko" && !line.text;
   if (line.role === "tool") {
     return (
-      <div className="msg-tool" onContextMenu={onContextMenu}>
+      <div className="msg-tool animate-in" onContextMenu={onContextMenu}>
+        <span className="msg-tool-label">
+          <Icon icon={Icons.agent} size={12} aria-hidden /> Tool
+        </span>
         {line.text}
       </div>
     );
   }
+  const agent = line.agentId ? getAgent(line.agentId) : line.role === "aeko" ? getAgent("aeko") : null;
+  const label = line.role === "member" && line.author ? line.author.split("@")[0] : agent?.name;
   return (
-    <div className={`msg-line ${line.role}${streaming ? " streaming" : ""}`} onContextMenu={onContextMenu}>
-      <div className="msg-bubble">{line.text || ""}</div>
+    <div className={`msg-line ${line.role}${streaming ? " streaming" : ""} animate-in`} onContextMenu={onContextMenu}>
+      <div className="msg-stack">
+        {label ? (
+          <div className="msg-author">
+            {agent ? (
+              <img className="msg-agent-avatar" src={agent.avatar} alt="" />
+            ) : null}
+            {label}
+          </div>
+        ) : null}
+        <div className="msg-bubble">
+          {line.text ? <MarkdownContent text={line.text} /> : ""}
+        </div>
+      </div>
     </div>
   );
 }
@@ -39,6 +59,10 @@ export function AppFooter() {
       <a href="/privacy">Privacy</a>
       <span aria-hidden>·</span>
       <a href="/terms">Terms</a>
+      <span aria-hidden>·</span>
+      <a href="https://getaeko.com" target="_blank" rel="noreferrer">
+        getaeko.com
+      </a>
     </footer>
   );
 }
@@ -48,105 +72,81 @@ export function AgentDot({ busy }: { busy?: boolean }) {
 }
 
 export function IconBack() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return <Icon icon={Icons.back} size={18} aria-hidden />;
 }
 
 export function IconPlus() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
+  return <Icon icon={Icons.plus} size={18} aria-hidden />;
 }
 
 export function IconSettings() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
-      <path
-        d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
+  return <Icon icon={Icons.gear} size={18} aria-hidden />;
 }
 
 export function IconAttach() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-export function IconMic() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
+  return <Icon icon={Icons.attach} size={18} aria-hidden />;
 }
 
 export function IconFile() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
+  return <Icon icon={Icons.file} size={18} aria-hidden />;
 }
 
 export function IconSend() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-export function IconMenu() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
+  return <Icon icon={Icons.send} size={18} aria-hidden />;
 }
 
 export function IconGlobe() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M3 12h18M12 3c2.5 2.8 4 6 4 9s-1.5 6.2-4 9M12 3c-2.5 2.8-4 6-4 9s1.5 6.2 4 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
+  return <Icon icon={Icons.globe} size={18} aria-hidden />;
 }
 
 export function IconSparkle() {
+  return <Icon icon={Icons.agent} size={18} aria-hidden />;
+}
+
+export function IconSearch({ size = 16 }: { size?: number }) {
+  return <Icon icon={Icons.search} size={size} aria-hidden />;
+}
+
+export function IconHome({ size = 16 }: { size?: number }) {
+  return <Icon icon={Icons.home} size={size} aria-hidden />;
+}
+
+export function IconTask({ size = 16 }: { size?: number }) {
+  return <Icon icon={Icons.task} size={size} aria-hidden />;
+}
+
+export function IconBrain({ size = 16 }: { size?: number }) {
+  return <Icon icon={Icons.brain} size={size} aria-hidden />;
+}
+
+export function IconTeam({ size = 16 }: { size?: number }) {
+  return <Icon icon={Icons.team} size={size} aria-hidden />;
+}
+
+export function BrandMark({ size = 32 }: { size?: number }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M12 2l1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4L12 2zM19 14l.8 2.6L22 17l-2.2.4L19 20l-.8-2.6L16 17l2.2-.4L19 14z" fill="currentColor" />
-    </svg>
+    <span className="brand-mark" style={{ width: size, height: size }} aria-hidden>
+      <svg viewBox="0 0 32 32" fill="none">
+        <rect width="32" height="32" rx="10" fill="url(#aeko-mark)" />
+        <path d="M10.5 22V10h2.6l2.8 6.1L18.4 10h2.4v12h-2.1v-6.4l-2.6 6.4h-1.8l-2.8-6.4V22h-2.2z" fill="#fff" />
+        <defs>
+          <linearGradient id="aeko-mark" x1="6" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#0071e3" />
+            <stop offset="1" stopColor="#5e5ce6" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </span>
   );
 }
 
 export function LegalPage({ title, children, backHref = "/" }: { title: string; children: ReactNode; backHref?: string }) {
   return (
-    <main className="aeko-root legal-page">
+    <main className="aeko-root onboard">
       <div className="legal-shell">
-        <a className="back" href={backHref}>← Back</a>
+        <a className="back" href={backHref}>
+          <IconBack /> Back
+        </a>
         <div className="legalbox">
           <h1>{title}</h1>
           <div className="legal-prose">{children}</div>
@@ -164,7 +164,9 @@ export function AndroidHandoff({ deepLink }: { deepLink: string }) {
         <div className="android-spinner" aria-hidden />
         <h1>Opening Aeko on Android</h1>
         <p>Your sign-in code is ready. If nothing happens, tap below.</p>
-        <a className="blackpill" href={deepLink}>Open Android app</a>
+        <a className="btn-primary" href={deepLink}>
+          Open Android app
+        </a>
       </div>
     </main>
   );

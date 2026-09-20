@@ -24,4 +24,6 @@ jobs:
           fi
           npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
           npx vercel build --prod --token "$VERCEL_TOKEN"
-          npx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+          URL=$(npx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN")
+          echo "Deployed: $URL"
+          npx vercel alias set "$URL" aeko.vercel.app --token "$VERCEL_TOKEN" || true

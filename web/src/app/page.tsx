@@ -1,9 +1,10 @@
 import { auth } from "@/auth";
 import { AekoApp } from "@/components/aeko-app";
 import { normEmail } from "@/lib/store";
+import { redirect } from "next/navigation";
 
 export default async function HomePage() {
   const session = await auth();
-  const email = session?.user?.email ? normEmail(session.user.email) : null;
-  return <AekoApp userEmail={email} />;
+  if (!session?.user?.email) redirect("/login");
+  return <AekoApp userEmail={normEmail(session.user.email)} />;
 }

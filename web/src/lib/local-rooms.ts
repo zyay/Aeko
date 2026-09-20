@@ -72,3 +72,18 @@ export function updateLocalMessage(roomId: string, id: string, text: string) {
   room.messages = room.messages.map((m) => (m.id === id ? { ...m, text } : m));
   save(rooms);
 }
+
+export function renameLocalRoom(roomId: string, title: string) {
+  const rooms = load();
+  const room = rooms.find((r) => r.id === roomId);
+  if (!room) return false;
+  room.title = title.trim() || room.title;
+  room.lastAt = Date.now();
+  save(rooms);
+  return true;
+}
+
+export function deleteLocalRoom(roomId: string) {
+  const rooms = load().filter((r) => r.id !== roomId);
+  save(rooms);
+}

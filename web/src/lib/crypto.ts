@@ -1,4 +1,4 @@
-export type BrainMode = "byok" | "server" | "gguf";
+export type BrainMode = "byok" | "server";
 
 export type BrainConfig = {
   mode: BrainMode;

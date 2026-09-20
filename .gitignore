@@ -18,6 +18,8 @@ keystore.properties
 node_modules
 web/dist
 web/data
+web/.env*.local
 .vercel
 web/.vercel
+web/.next
 

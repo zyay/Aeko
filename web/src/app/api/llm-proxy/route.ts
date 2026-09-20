@@ -23,6 +23,7 @@ export async function POST(req: Request) {
   if (!session?.user) return NextResponse.json({ error: "auth" }, { status: 401 });
   const enabled = process.env.AEKO_LLM_PROXY === "1" || process.env.LYAN_LLM_PROXY === "1";
   if (!enabled) return NextResponse.json({ error: "proxy off" }, { status: 403 });
+
   const body = (await req.json()) as { url?: string; headers?: Record<string, string>; payload?: unknown };
   if (!body.url || !proxyAllowed(body.url)) {
     return NextResponse.json({ error: "url not allowed" }, { status: 400 });
@@ -32,6 +33,11 @@ export async function POST(req: Request) {
     headers: { "Content-Type": "application/json", ...(body.headers || {}) },
     body: JSON.stringify(body.payload),
   });
-  const text = await res.text();
-  return new NextResponse(text, { status: res.status, headers: { "Content-Type": "application/json" } });
+  return new NextResponse(res.body, {
+    status: res.status,
+    headers: {
+      "Content-Type": res.headers.get("Content-Type") || "text/event-stream",
+      "Cache-Control": "no-cache",
+    },
+  });
 }

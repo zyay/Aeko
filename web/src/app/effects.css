@@ -1,0 +1,170 @@
+/* Motion + subtle FX only — colors live in globals.css tokens */
+
+.fx-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.fx-aurora {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.22;
+  animation: aurora-drift 22s ease-in-out infinite alternate;
+}
+.fx-aurora-a {
+  width: 50vw;
+  height: 50vw;
+  top: -18%;
+  left: -8%;
+  background: radial-gradient(circle, rgba(47, 129, 247, 0.2), transparent 70%);
+}
+.fx-aurora-b {
+  width: 40vw;
+  height: 40vw;
+  bottom: -12%;
+  right: -10%;
+  background: radial-gradient(circle, rgba(30, 64, 175, 0.15), transparent 70%);
+  animation-delay: -8s;
+}
+.fx-aurora-c { display: none; }
+.fx-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, black, transparent);
+  opacity: 0.35;
+}
+.fx-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+@keyframes aurora-drift {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(3%, 4%) scale(1.05); }
+}
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ring-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(47, 129, 247, 0.15); }
+  50% { box-shadow: 0 0 0 1px rgba(47, 129, 247, 0.35), 0 0 24px rgba(47, 129, 247, 0.12); }
+}
+@keyframes thinking-dot {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.85); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+.aeko-root {
+  position: relative;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+}
+.workspace,
+.workspace-main,
+.chat-overlay {
+  position: relative;
+  z-index: 1;
+}
+.workspace-main {
+  background: rgba(13, 17, 23, 0.72);
+  backdrop-filter: blur(10px);
+}
+.text-gradient {
+  background: linear-gradient(120deg, #fff 0%, #93c5fd 45%, var(--accent) 80%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  animation: gradient-shift 8s ease infinite;
+}
+.glow-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.glow-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--line-strong);
+}
+.glow-card-shine { display: none; }
+.spotlight-card.glow-card,
+.cf-card.glow-card { /* spotlight only gets beam via prop */ }
+.msg-line { animation: msg-in 0.28s ease both; }
+.msg-line.streaming .msg-bubble::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(47, 129, 247, 0.08), transparent);
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+.agent-chip.on::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 11px;
+  padding: 1px;
+  background: conic-gradient(from 0deg, var(--accent), var(--accent-hover), var(--accent));
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: ring-spin 5s linear infinite;
+  pointer-events: none;
+}
+.thinking-orb {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 4px 8px;
+}
+.thinking-orb span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: thinking-dot 1.2s ease-in-out infinite;
+}
+.thinking-orb span:nth-child(2) { animation-delay: 0.15s; }
+.thinking-orb span:nth-child(3) { animation-delay: 0.3s; }
+.auth-gate {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+}
+.auth-gate-layout {
+  position: relative;
+  z-index: 1;
+  width: min(920px, 100%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: center;
+}
+@media (max-width: 820px) {
+  .auth-gate-layout { grid-template-columns: 1fr; }
+}
