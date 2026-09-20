@@ -2,16 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  eslint: { ignoreDuringBuilds: true },
+  eslint: { ignoreDuringBuilds: false },
   outputFileTracingRoot: process.cwd(),
-  transpilePackages: [
-    "border-beam",
-    "thinking-orbs",
-    "liquid-gooey",
-    "img-fx",
-    "@bible-strong/avatar-react",
-    "@bible-strong/avatar-core",
-  ],
+  transpilePackages: ["border-beam", "thinking-orbs"],
 };
 
 export default nextConfig;
