@@ -2,6 +2,7 @@
 
 import type { FormEvent, RefObject } from "react";
 import { GlowCard } from "@/components/glow-card";
+import Link from "next/link";
 import { EmptyState, KbdHint, Panel, UiBanner } from "@/components/ui-kit";
 import type { BrainConfig, Line, Room, RoomPreview, View } from "@/components/aeko-app-types";
 import type { AgentDef } from "@/lib/agents";
@@ -143,6 +144,14 @@ export function DeskView({
             <p>Bring your OpenAI-compatible API or local inference server.</p>
             <span className="cf-card-action">{brain.valid ? "Connected" : "Configure"}</span>
           </GlowCard>
+          <Link href="/learn/plan" style={{ textDecoration: "none", color: "inherit" }}>
+            <GlowCard as="div" className="cf-card" beam={false}>
+              <div className="cf-card-icon"><IconTeam size={18} /></div>
+              <h3>abc — Learn English</h3>
+              <p>Skills hub, MCP studio, GPT chat — always available.</p>
+              <span className="cf-card-action">Open /learn</span>
+            </GlowCard>
+          </Link>
           <GlowCard as="button" type="button" className="cf-card" beam={false} onClick={onInvite}>
             <div className="cf-card-icon"><IconTeam size={18} /></div>
             <h3>Invite collaborators</h3>
