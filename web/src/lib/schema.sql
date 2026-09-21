@@ -41,3 +41,14 @@ CREATE TABLE IF NOT EXISTS aeko_push (
   p256dh TEXT NOT NULL,
   auth TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS learn_profiles (
+  email TEXT PRIMARY KEY,
+  profile_json TEXT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS learn_vocabulary (
+  email TEXT NOT NULL,
+  word_id TEXT NOT NULL,
+  data_json TEXT NOT NULL,
+  PRIMARY KEY (email, word_id)
+);

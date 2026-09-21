@@ -3,9 +3,11 @@
 import type { FormEvent, RefObject } from "react";
 import { GlowCard } from "@/components/glow-card";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { EmptyState, KbdHint, Panel, UiBanner } from "@/components/ui-kit";
 import type { BrainConfig, Line, Room, RoomPreview, View } from "@/components/aeko-app-types";
 import type { AgentDef } from "@/lib/agents";
+import { computeStreak, hasProfile } from "@/lib/learn-store";
 import {
   BrandMark,
   IconAttach,
@@ -82,6 +84,11 @@ export function DeskView({
   onAgentMode: () => void;
   onFile: (file: File) => void;
 }) {
+  const [learnStreak, setLearnStreak] = useState(0);
+  useEffect(() => {
+    if (hasProfile()) setLearnStreak(computeStreak());
+  }, []);
+
   return (
     <div className="workspace-main">
       <header className="workspace-topbar">
@@ -148,7 +155,7 @@ export function DeskView({
             <GlowCard as="div" className="cf-card" beam={false}>
               <div className="cf-card-icon"><IconTeam size={18} /></div>
               <h3>abc — Learn English</h3>
-              <p>Skills hub, MCP studio, GPT chat — always available.</p>
+              <p>Skills hub, MCP studio, GPT chat{learnStreak > 0 ? ` · ${learnStreak} day streak` : ""}.</p>
               <span className="cf-card-action">Open /learn</span>
             </GlowCard>
           </Link>

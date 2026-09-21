@@ -4,10 +4,15 @@ export type SkillEntry = {
   description: string;
   repo: string;
   path?: string;
+  githubOwner?: string;
+  githubRepo?: string;
   stars?: number;
   tags: string[];
   niche?: string;
   source: "curated" | "github";
+  content?: string;
+  sha?: string | null;
+  installedAt?: number;
 };
 
 export type McpPreset = {
@@ -36,11 +41,113 @@ export const SKILL_CATEGORIES = [
   "Niche",
 ] as const;
 
-/** Curated high-signal skills & skill repos — GitHub search adds 10k+ more at runtime. */
+/** Curated high-signal skills — pinned repos fetch real SKILL.md; GitHub search adds 10k+ more at runtime. */
 export const CURATED_SKILLS: SkillEntry[] = [
-  { id: "gcp-prod-security", name: "GCP Prod Security Deploy", description: "Production GCP with Cloud Run, Terraform, WAF, IAM least-privilege.", repo: "https://github.com/search?q=gcp+terraform+cloud+run+skill", tags: ["security", "gcp", "terraform"], niche: "Enterprise cloud", source: "curated" },
-  { id: "create-skill", name: "Create Agent Skill", description: "Author SKILL.md files for Cursor agents.", repo: "https://github.com/search?q=SKILL.md+cursor+agent", tags: ["cursor", "authoring"], niche: "Meta", source: "curated" },
-  { id: "security-review", name: "Security Review", description: "Structured security review of code changes.", repo: "https://github.com/search?q=security+review+SKILL.md", tags: ["security", "review"], niche: "AppSec", source: "curated" },
+  {
+    id: "create-skill",
+    name: "Create Agent Skill",
+    description: "Author SKILL.md files for Cursor agents.",
+    repo: "https://github.com/anthropics/anthropic-cookbook",
+    githubOwner: "anthropics",
+    githubRepo: "anthropic-cookbook",
+    path: "README.md",
+    tags: ["cursor", "authoring"],
+    niche: "Meta",
+    source: "curated",
+  },
+  {
+    id: "mcp-github",
+    name: "MCP GitHub Server",
+    description: "Official GitHub MCP server patterns and setup.",
+    repo: "https://github.com/modelcontextprotocol/servers",
+    githubOwner: "modelcontextprotocol",
+    githubRepo: "servers",
+    path: "src/github/README.md",
+    tags: ["mcp", "github"],
+    niche: "Integrations",
+    source: "curated",
+  },
+  {
+    id: "mcp-filesystem",
+    name: "MCP Filesystem",
+    description: "Scoped filesystem MCP server reference.",
+    repo: "https://github.com/modelcontextprotocol/servers",
+    githubOwner: "modelcontextprotocol",
+    githubRepo: "servers",
+    path: "src/filesystem/README.md",
+    tags: ["mcp", "local"],
+    niche: "Essential",
+    source: "curated",
+  },
+  {
+    id: "mcp-fetch",
+    name: "MCP Fetch",
+    description: "HTTP fetch MCP for agent web access.",
+    repo: "https://github.com/modelcontextprotocol/servers",
+    githubOwner: "modelcontextprotocol",
+    githubRepo: "servers",
+    path: "src/fetch/README.md",
+    tags: ["mcp", "web"],
+    niche: "Research",
+    source: "curated",
+  },
+  {
+    id: "mcp-memory",
+    name: "MCP Memory",
+    description: "Persistent memory server for agents.",
+    repo: "https://github.com/modelcontextprotocol/servers",
+    githubOwner: "modelcontextprotocol",
+    githubRepo: "servers",
+    path: "src/memory/README.md",
+    tags: ["mcp", "agents"],
+    niche: "Context",
+    source: "curated",
+  },
+  {
+    id: "nextjs-docs",
+    name: "Next.js Patterns",
+    description: "App router and API route best practices.",
+    repo: "https://github.com/vercel/next.js",
+    githubOwner: "vercel",
+    githubRepo: "next.js",
+    path: "readme.md",
+    tags: ["nextjs", "frontend"],
+    niche: "Frontend",
+    source: "curated",
+  },
+  {
+    id: "playwright",
+    name: "Playwright Testing",
+    description: "Browser automation and E2E testing docs.",
+    repo: "https://github.com/microsoft/playwright",
+    githubOwner: "microsoft",
+    githubRepo: "playwright",
+    path: "README.md",
+    tags: ["testing", "e2e"],
+    niche: "QA",
+    source: "curated",
+  },
+  {
+    id: "terraform",
+    name: "Terraform Basics",
+    description: "Infrastructure as code reference patterns.",
+    repo: "https://github.com/hashicorp/terraform",
+    githubOwner: "hashicorp",
+    githubRepo: "terraform",
+    path: "README.md",
+    tags: ["devops", "terraform"],
+    niche: "Infra",
+    source: "curated",
+  },
+  {
+    id: "security-review",
+    name: "Security Review",
+    description: "Structured security review of code changes.",
+    repo: "https://github.com/search?q=security+review+SKILL.md",
+    tags: ["security", "review"],
+    niche: "AppSec",
+    source: "curated",
+  },
   { id: "bugbot-review", name: "Bugbot Review", description: "Automated bug-focused PR review patterns.", repo: "https://github.com/search?q=bugbot+review+skill", tags: ["review", "bugs"], niche: "Quality", source: "curated" },
   { id: "split-prs", name: "Split to PRs", description: "Split large changes into reviewable pull requests.", repo: "https://github.com/search?q=split+pull+request+skill", tags: ["git", "workflow"], niche: "Ship discipline", source: "curated" },
   { id: "sdk-typescript", name: "Cursor SDK (TypeScript)", description: "Programmatic agents via @cursor/sdk.", repo: "https://github.com/search?q=cursor+sdk+typescript", tags: ["sdk", "automation"], niche: "Platform", source: "curated" },

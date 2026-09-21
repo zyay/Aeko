@@ -394,6 +394,91 @@
 
 .learn-mobile-nav { display: none; }
 
+.learn-card-hover {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.learn-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.learn-task-row.task-done { opacity: 0.75; }
+
+.learn-highlight-btn {
+  border: none;
+  background: var(--learn-accent-soft);
+  padding: 0 2px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.learn-highlight-btn:hover { background: #e5e5e5; }
+
+.learn-empty {
+  color: var(--learn-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.learn-skeleton {
+  color: var(--learn-muted);
+  animation: learn-pulse 1.2s ease-in-out infinite;
+}
+
+.learn-banner {
+  padding: 12px 14px;
+  border-radius: var(--learn-radius-sm);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.learn-banner.warn {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+}
+
+.learn-correct { border-color: #16a34a !important; background: #f0fdf4 !important; }
+.learn-wrong { border-color: #dc2626 !important; background: #fef2f2 !important; }
+
+.learn-more-sheet {
+  position: fixed;
+  bottom: 72px;
+  right: 12px;
+  left: 12px;
+  background: var(--learn-bg);
+  border: 1px solid var(--learn-line);
+  border-radius: var(--learn-radius);
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+  z-index: 30;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+.learn-more-sheet a {
+  padding: 12px;
+  border-radius: var(--learn-radius-sm);
+  font-size: 14px;
+}
+.learn-more-sheet a:hover { background: var(--learn-surface); }
+
+.learn-mobile-nav button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--learn-muted);
+  padding: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+.learn-mobile-nav button.on { color: var(--learn-text); font-weight: 600; }
+
+@keyframes learn-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
 @media (max-width: 960px) {
   .learn-shell { flex-direction: column; }
   .learn-sidebar { display: none; }

@@ -1,19 +1,37 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { LANGUAGES, ONBOARDING_REASONS, TOPICS } from "@/lib/learn-data";
 import { LearnAuthShell } from "@/components/learn/shell";
+import { DAILY_GOALS, LANGUAGES, LEVELS, ONBOARDING_REASONS, TOPICS } from "@/lib/learn-data";
+import { saveProfile } from "@/lib/learn-store";
+import type { LearnLevel } from "@/lib/learn-store";
 
 export default function OnboardingPage() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [reason, setReason] = useState("");
   const [topics, setTopics] = useState<string[]>([]);
   const [lang, setLang] = useState("English");
+  const [level, setLevel] = useState<LearnLevel>("Intermediate");
+  const [dailyMinutes, setDailyMinutes] = useState(15);
 
   function toggleTopic(id: string) {
     setTopics((t) => (t.includes(id) ? t.filter((x) => x !== id) : [...t, id]));
   }
+
+  function finish() {
+    saveProfile({ reason, topics, uiLanguage: lang, level, dailyMinutes });
+    router.push("/learn/plan");
+  }
+
+  const canNext =
+    (step === 0 && reason) ||
+    (step === 1 && topics.length > 0) ||
+    (step === 2 && lang) ||
+    (step === 3 && level) ||
+    step === 4;
 
   return (
     <LearnAuthShell>
@@ -73,6 +91,42 @@ export default function OnboardingPage() {
             </div>
           </>
         )}
+        {step === 3 && (
+          <>
+            <h2>Your English level</h2>
+            <p>We will match content difficulty to you.</p>
+            <div style={{ display: "grid", gap: 8, maxWidth: 360, margin: "0 auto" }}>
+              {LEVELS.map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  className={level === l ? "learn-btn primary full" : "learn-btn secondary full"}
+                  onClick={() => setLevel(l)}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        {step === 4 && (
+          <>
+            <h2>Daily learning goal</h2>
+            <p>How many minutes can you practice each day?</p>
+            <div style={{ display: "grid", gap: 8, maxWidth: 320, margin: "0 auto" }}>
+              {DAILY_GOALS.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  className={dailyMinutes === m ? "learn-btn primary full" : "learn-btn secondary full"}
+                  onClick={() => setDailyMinutes(m)}
+                >
+                  {m} minutes / day
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
         <div style={{ marginTop: 28, display: "flex", gap: 10, justifyContent: "center" }}>
           {step > 0 && (
@@ -80,19 +134,19 @@ export default function OnboardingPage() {
               Back
             </button>
           )}
-          {step < 2 ? (
-            <button type="button" className="learn-btn primary" onClick={() => setStep((s) => s + 1)}>
+          {step < 4 ? (
+            <button type="button" className="learn-btn primary" disabled={!canNext} onClick={() => setStep((s) => s + 1)}>
               Next
             </button>
           ) : (
-            <Link href="/learn/plan" className="learn-btn primary">
+            <button type="button" className="learn-btn primary" onClick={finish}>
               Start learning
-            </Link>
+            </button>
           )}
         </div>
 
         <div className="learn-step-dots" aria-hidden>
-          {[0, 1, 2].map((i) => (
+          {[0, 1, 2, 3, 4].map((i) => (
             <span key={i} className={step === i ? "on" : ""} />
           ))}
         </div>
