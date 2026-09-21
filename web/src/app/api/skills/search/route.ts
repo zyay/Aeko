@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Rate limited" }, { status: 429 });
   }
 
-  const q = req.nextUrl.searchParams.get("q")?.trim() ?? "filename:SKILL.md";
+  const q = req.nextUrl.searchParams.get("q")?.trim().slice(0, 200) ?? "filename:SKILL.md";
   const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
 
   const curated = CURATED_SKILLS.filter(

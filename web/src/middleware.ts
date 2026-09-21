@@ -6,6 +6,8 @@ const PUBLIC = new Set(["/login", "/privacy", "/terms", "/api/health"]);
 function isPublic(pathname: string) {
   if (PUBLIC.has(pathname)) return true;
   if (pathname.startsWith("/learn")) return true;
+  if (pathname.startsWith("/api/learn")) return true;
+  if (pathname.startsWith("/api/skills")) return true;
   if (pathname.startsWith("/api/auth")) return true;
   return false;
 }
