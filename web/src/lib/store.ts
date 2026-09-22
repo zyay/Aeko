@@ -317,7 +317,7 @@ export async function issueClaim(email: string, name: string) {
   const who = normEmail(email);
   const token = await issueToken(who);
   const code = crypto.randomUUID().replace(/-/g, "").slice(0, 24);
-  const exp = Date.now() + 120_000;
+  const exp = Date.now() + 60_000;
   const sql = await ready();
   if (sql) {
     await sql`DELETE FROM aeko_claims WHERE email = ${who}`;
@@ -335,9 +335,10 @@ export async function consumeClaim(code: string) {
   const now = Date.now();
   const sql = await ready();
   if (sql) {
-    const rows = await sql`DELETE FROM aeko_claims WHERE code = ${code} AND exp >= ${now} RETURNING email, name, token`;
-    const row = rows[0] as { email: string; name: string; token: string } | undefined;
-    return row ? { email: normEmail(row.email), name: row.name, token: row.token } : null;
+    const rows = await sql`DELETE FROM aeko_claims WHERE code = ${code} RETURNING email, name, token, exp`;
+    const row = rows[0] as { email: string; name: string; token: string; exp: number | string } | undefined;
+    if (!row || Number(row.exp) < now) return null;
+    return { email: normEmail(row.email), name: row.name, token: row.token };
   }
   return withFile((db) => {
     const row = db.claims.find((c) => c.code === code);

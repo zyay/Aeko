@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: aeko
+      POSTGRES_PASSWORD: aeko
+      POSTGRES_DB: aeko
+    ports:
+      - "5432:5432"
+    volumes:
+      - aeko-pg:/var/lib/postgresql/data
+
+  llama:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    profiles: ["llm"]
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./models:/models:ro
+    command: ["-m", "/models/model.gguf", "--host", "0.0.0.0", "--port", "8080"]
+
+volumes:
+  aeko-pg:

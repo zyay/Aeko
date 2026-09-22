@@ -108,6 +108,11 @@ export function ChatView({
             {members.length > 1 ? ` · ${members.length} people` : ""}
           </div>
           {members.length > 0 && <div className="thread-members">{members.map((m) => m.split("@")[0]).join(", ")}</div>}
+          <div className="data-mode">
+            {/localhost|127\.0\.0\.1/.test(brain.baseUrl)
+              ? "Local model. Prompts stay on this machine."
+              : "Cloud model. The provider sees the prompt. Room keys stay on your devices."}
+          </div>
         </div>
         {roomId && (
           <>

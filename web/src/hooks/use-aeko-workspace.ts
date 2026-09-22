@@ -79,7 +79,10 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
     if (initialRoomId) {
       setRoomId(initialRoomId);
       setActiveAgentId(getRoomAgentId(initialRoomId));
+      return;
     }
+    const pinned = localStorage.getItem("aeko-pinned-agent");
+    if (pinned) setActiveAgentId(pinned);
   }, [initialRoomId]);
 
   useEffect(() => {

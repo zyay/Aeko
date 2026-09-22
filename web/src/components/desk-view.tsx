@@ -8,6 +8,7 @@ import { EmptyState, KbdHint, Panel, UiBanner } from "@/components/ui-kit";
 import type { BrainConfig, Line, Room, RoomPreview, View } from "@/components/aeko-app-types";
 import type { AgentDef } from "@/lib/agents";
 import { computeStreak, hasProfile } from "@/lib/learn-store";
+import { WorkHub } from "@/components/work-hub";
 import {
   BrandMark,
   IconAttach,
@@ -166,6 +167,8 @@ export function DeskView({
             <span className="cf-card-action">Send invite</span>
           </GlowCard>
         </div>
+
+        <WorkHub rooms={filteredRooms} onOpenRoom={onOpenRoom} />
 
         <GlowCard
           as="button"
