@@ -8,6 +8,7 @@ import { Icon, Icons } from "@/components/icons";
 import { IconBtn } from "@/components/ui-kit";
 import type { BrainConfig, Line } from "@/components/aeko-app-types";
 import type { AgentDef } from "@/lib/agents";
+import { ChannelExtras } from "@/components/channel-extras";
 import {
   IconAttach,
   IconBack,
@@ -57,6 +58,10 @@ export function ChatView({
   onReply,
   onCopy,
   onRegenerate,
+  reactions = [],
+  replyParent = null,
+  onReact,
+  onClearReply,
 }: {
   current: string;
   roomId: string | null;
@@ -93,6 +98,10 @@ export function ChatView({
   onReply: (line: Line) => void;
   onCopy: (line: Line) => void;
   onRegenerate: (line: Line) => void;
+  reactions?: { messageId: string; emoji: string }[];
+  replyParent?: string | null;
+  onReact?: (messageId: string, emoji: string) => void;
+  onClearReply?: () => void;
 }) {
   return (
     <div className="chat-overlay">
@@ -151,9 +160,25 @@ export function ChatView({
               <p>Ask for summaries, code, research, or attach a file from the toolbar below.</p>
             </div>
           )}
-          {messages.map((m) => (
-            <MessageRow key={m.id} line={m} busy={busy} onContextMenu={(e) => { e.preventDefault(); onContextMenu(m); }} />
+          {messages.filter((m) => !m.parentId).map((m) => (
+            <div key={m.id}>
+              <MessageRow line={m} busy={busy} onContextMenu={(e) => { e.preventDefault(); onContextMenu(m); }} />
+              <div className="msg-actions">
+                <button type="button" onClick={() => onReply(m)}>Reply</button>
+                {["👍", "✅", "👀"].map((emoji) => (
+                  <button key={emoji} type="button" onClick={() => onReact?.(m.id, emoji)}>
+                    {emoji} {reactions.filter((r) => r.messageId === m.id && r.emoji === emoji).length || ""}
+                  </button>
+                ))}
+              </div>
+              {messages.filter((r) => r.parentId === m.id).map((r) => (
+                <div key={r.id} className="thread-reply">
+                  <MessageRow line={r} busy={busy} onContextMenu={(e) => { e.preventDefault(); onContextMenu(r); }} />
+                </div>
+              ))}
+            </div>
           ))}
+          {roomId && <ChannelExtras roomId={roomId} />}
           <ToolTracePanel lines={messages} />
           {busy && enginePhase === "thinking" && <ThinkingOrb />}
         </div>
@@ -168,6 +193,12 @@ export function ChatView({
               </button>
             ))}
           </div>
+          {replyParent && (
+            <div className="reply-banner">
+              Replying in thread
+              <button type="button" onClick={onClearReply}>Cancel</button>
+            </div>
+          )}
           <form className="composer" onSubmit={onSubmit}>
             <div className="composer-tools">
               <button type="button" aria-label="Attach" onClick={onShowAttach}>

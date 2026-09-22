@@ -549,6 +549,14 @@ a { color: inherit; text-decoration: none; }
 .work-kicker, .work-muted, .work-empty { color: var(--main-muted); font-size: 13px; }
 .work-row select { background: var(--main-bg); color: inherit; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
 .data-mode { font-size: 12px; color: var(--main-muted); margin-top: 4px; }
+.sidebar-create { display: grid; gap: 6px; padding: 8px; }
+.sidebar-create input, .sidebar-create textarea, .sidebar-create select {
+  width: 100%; background: var(--main-bg); color: inherit; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px;
+}
+.msg-actions, .thread-reply, .reply-banner, .channel-extras { font-size: 12px; color: var(--main-muted); }
+.thread-reply { margin-left: 28px; }
+.channel-extras { margin-top: 16px; display: grid; gap: 8px; }
+.channel-extras textarea, .channel-extras input { width: 100%; }
 
 .cf-cards {
   display: grid;

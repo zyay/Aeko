@@ -8,6 +8,7 @@ function isPublic(pathname: string) {
   if (pathname.startsWith("/learn")) return true;
   if (pathname.startsWith("/api/learn")) return true;
   if (pathname.startsWith("/api/skills")) return true;
+  if (pathname === "/api/workflows/hook") return true;
   if (pathname.startsWith("/api/auth")) return true;
   return false;
 }

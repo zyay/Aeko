@@ -68,6 +68,7 @@ export function AekoApp({
               onDeskSearch={ws.setDeskSearch}
               onPalette={() => ws.setPaletteOpen(true)}
               onCreateTask={ws.createTask}
+              onCreateChannel={ws.createChannel}
               onSettings={ws.goSettings}
               onOpenRoom={ws.openChat}
             />
@@ -162,6 +163,10 @@ export function AekoApp({
           onContextMenu={ws.setSheet}
           onCloseSheet={() => ws.setSheet(null)}
           onReply={ws.replyTo}
+          reactions={ws.reactions}
+          replyParent={ws.replyParent}
+          onReact={(id, emoji) => void ws.reactTo(id, emoji)}
+          onClearReply={() => ws.setReplyParent(null)}
           onCopy={(line) => {
             navigator.clipboard.writeText(line.text);
             ws.setSheet(null);
