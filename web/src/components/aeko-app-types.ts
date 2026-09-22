@@ -5,9 +5,19 @@ export type Line = {
   at?: number;
   author?: string;
   agentId?: string;
+  parentId?: string | null;
   meta?: { ms?: number; tools?: string[] };
 };
-export type Room = { id: string; title: string; lastAt?: number; messageCount?: number; local?: boolean };
+export type Room = {
+  id: string;
+  title: string;
+  lastAt?: number;
+  messageCount?: number;
+  local?: boolean;
+  kind?: "channel" | "dm" | "project" | "canvas";
+  visibility?: "open" | "private";
+  topic?: string;
+};
 export type RoomPreview = { text: string; lastAt: number };
 export type View = "desk" | "chat" | "brain";
 

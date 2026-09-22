@@ -25,6 +25,8 @@ export function WorkHub({
   }, []);
 
   const waiting = rooms.filter((r) => (triage[r.id] ?? "open") === "waiting" || (triage[r.id] ?? "open") === "open");
+  const channels = rooms.filter((r) => (r.kind ?? "channel") === "channel" || r.kind === "project" || r.kind === "canvas");
+  const dms = rooms.filter((r) => r.kind === "dm");
 
   return (
     <section className="work-hub" aria-label="Workspace">
@@ -43,9 +45,10 @@ export function WorkHub({
           {waiting.slice(0, 6).map((r) => (
             <button key={r.id} type="button" className="work-row" onClick={() => onOpenRoom(r.id)}>
               <strong>{r.title}</strong>
-              <span>{triage[r.id] ?? "open"}</span>
+              <span>{r.kind ?? "channel"} · {triage[r.id] ?? "open"}</span>
             </button>
           ))}
+          <p className="work-kicker">{channels.length} channels · {dms.length} DMs</p>
         </div>
       )}
 

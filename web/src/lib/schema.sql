@@ -6,7 +6,10 @@ CREATE TABLE IF NOT EXISTS aeko_users (
 CREATE TABLE IF NOT EXISTS aeko_rooms (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
-  created_at BIGINT NOT NULL
+  created_at BIGINT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'channel',
+  visibility TEXT NOT NULL DEFAULT 'open',
+  topic TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS aeko_members (
   room_id TEXT NOT NULL,
@@ -22,7 +25,8 @@ CREATE TABLE IF NOT EXISTS aeko_messages (
   sender TEXT NOT NULL,
   iv TEXT NOT NULL,
   ciphertext TEXT NOT NULL,
-  created_at BIGINT NOT NULL
+  created_at BIGINT NOT NULL,
+  parent_id TEXT
 );
 CREATE TABLE IF NOT EXISTS aeko_tokens (
   token TEXT PRIMARY KEY,
@@ -40,6 +44,28 @@ CREATE TABLE IF NOT EXISTS aeko_push (
   email TEXT NOT NULL,
   p256dh TEXT NOT NULL,
   auth TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS aeko_reactions (
+  message_id TEXT NOT NULL,
+  email TEXT NOT NULL,
+  emoji TEXT NOT NULL,
+  PRIMARY KEY (message_id, email, emoji)
+);
+CREATE TABLE IF NOT EXISTS aeko_audit (
+  id TEXT PRIMARY KEY,
+  room_id TEXT NOT NULL,
+  actor TEXT NOT NULL,
+  action TEXT NOT NULL,
+  hash TEXT NOT NULL,
+  created_at BIGINT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS aeko_workflows (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  name TEXT NOT NULL,
+  yaml TEXT NOT NULL,
+  enabled BOOLEAN NOT NULL,
+  last_run BIGINT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS learn_profiles (
   email TEXT PRIMARY KEY,

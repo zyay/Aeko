@@ -68,6 +68,8 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
   const [notifications, setNotifications] = useState<{ id: string; text: string; at: number }[]>([]);
   const [typers, setTypers] = useState<string[]>([]);
   const [deskSearch, setDeskSearch] = useState("");
+  const [replyParent, setReplyParent] = useState<string | null>(null);
+  const [reactions, setReactions] = useState<{ messageId: string; email: string; emoji: string }[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [activeAgentId, setActiveAgentId] = useState("aeko");
   const [enginePhase, setEnginePhase] = useState<"idle" | "thinking" | "speaking">("idle");
@@ -172,11 +174,12 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
       setLocalMode(false);
       setMembers((json.members as { email: string }[]).map((m) => m.email));
       const lines: Line[] = [];
-      for (const m of json.messages as { id: string; from: string; iv: string; ciphertext: string; createdAt?: number }[]) {
+      for (const m of json.messages as { id: string; from: string; iv: string; ciphertext: string; createdAt?: number; parentId?: string | null }[]) {
         const raw = await decryptMessage(key, m.iv, m.ciphertext).catch(() => "(undecryptable)");
-        lines.push(decryptLine(m.id, m.from, userEmail, raw, m.createdAt));
+        lines.push(decryptLine(m.id, m.from, userEmail, raw, m.createdAt, m.parentId));
       }
       setMessages(lines);
+      setReactions((json.reactions as { messageId: string; email: string; emoji: string }[]) ?? []);
       const last = lines[lines.length - 1];
       if (last) setPreviews((p) => ({ ...p, [id]: { text: last.text.slice(0, 100), lastAt: last.at ?? Date.now() } }));
     } catch {
@@ -228,7 +231,10 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
     router.push("/settings");
   }
 
-  async function createRemoteTask(name: string): Promise<{ id: string; key: string } | null> {
+  async function createRemoteTask(
+    name: string,
+    meta?: { kind?: "channel" | "dm" | "project" | "canvas"; visibility?: "open" | "private"; topic?: string },
+  ): Promise<{ id: string; key: string } | null> {
     let pub: JsonWebKey;
     try {
       pub = await ensureIdentity();
@@ -241,7 +247,15 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
     const res = await fetch("/api/rooms", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: name, wrappedKey: wrap.wrappedKey, wrapIv: wrap.wrapIv, peerPub: JSON.stringify(pub) }),
+      body: JSON.stringify({
+        title: name,
+        wrappedKey: wrap.wrappedKey,
+        wrapIv: wrap.wrapIv,
+        peerPub: JSON.stringify(pub),
+        kind: meta?.kind ?? "channel",
+        visibility: meta?.visibility ?? "open",
+        topic: meta?.topic ?? "",
+      }),
     });
     if (!res.ok) {
       setStatus(`Could not create task (${res.status})`);
@@ -259,8 +273,14 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
   }
 
   function createTask() {
-    const name = title.trim() || `Task ${rooms.length + 1}`;
+    const name = title.trim() || `Channel ${rooms.length + 1}`;
     void createRemoteTask(name).then((created) => {
+      if (created) openChat(created.id);
+    });
+  }
+
+  function createChannel(input: { title: string; topic: string; kind: "channel" | "dm" | "project" | "canvas"; visibility: "open" | "private" }) {
+    void createRemoteTask(input.title, input).then((created) => {
       if (created) openChat(created.id);
     });
   }
@@ -287,12 +307,16 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
     setNotifications((n) => [{ id: String(Date.now()), text: `Invited ${email}`, at: Date.now() }, ...n].slice(0, 20));
   }
 
-  async function postPlain(text: string, rid = roomId, key = roomKey, assistantAgentId?: string) {
+  async function postPlain(text: string, rid = roomId, key = roomKey, assistantAgentId?: string, parentId?: string | null) {
     if (!rid || !key || !text.trim()) return;
     if (localMode || rid.startsWith("local-")) return;
     const payload = assistantAgentId ? encodeAssistantPayload(text, assistantAgentId) : text;
     const enc = await encryptMessage(key, payload);
-    await fetch(`/api/rooms/${rid}/messages`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(enc) });
+    await fetch(`/api/rooms/${rid}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...enc, parentId: parentId ?? undefined }),
+    });
     await fetch(`/api/rooms/${rid}/notify`, { method: "POST" });
     setPreviews((p) => ({ ...p, [rid]: { text: text.slice(0, 100), lastAt: Date.now() } }));
   }
@@ -323,13 +347,14 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
     if (fromDesk) setDeskDraft("");
     else setDraft("");
 
-    const userLine: Line = { id: String(Date.now()), role: "user", text: prompt, at: Date.now() };
+    const userLine: Line = { id: String(Date.now()), role: "user", text: prompt, at: Date.now(), parentId: replyParent };
     const nextMsgs = [...messages, userLine];
     setMessages(nextMsgs);
     if (isLocal) {
       appendLocalMessage(activeRoomId, userLine);
       persistLocal(nextMsgs);
-    } else if (activeKey) await postPlain(prompt, activeRoomId, activeKey);
+    } else if (activeKey) await postPlain(prompt, activeRoomId, activeKey, undefined, replyParent);
+    setReplyParent(null);
     refreshRooms();
   }
 
@@ -440,8 +465,19 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
   }
 
   function replyTo(line: Line) {
-    setDraft((d) => `> ${line.text.slice(0, 200)}\n`);
+    setReplyParent(line.id);
+    setDraft((d) => d);
     setSheet(null);
+  }
+
+  async function reactTo(messageId: string, emoji: string) {
+    if (!roomId) return;
+    await fetch(`/api/rooms/${roomId}/reactions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messageId, emoji }),
+    });
+    setReactions((list) => [...list, { messageId, email: userEmail, emoji }]);
   }
 
   function regenerateFrom(line: Line) {
@@ -496,6 +532,15 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
     { id: "new", label: "New task", hint: "Create a focused room", run: createTask },
     { id: "settings", label: "Open settings", hint: "Model and account", run: goSettings },
     { id: "search", label: "Focus task search", hint: "Sidebar filter", run: () => deskSearchRef.current?.focus() },
+    ...messages
+      .filter((m) => m.role !== "tool")
+      .slice(-12)
+      .map((m) => ({
+        id: `msg-${m.id}`,
+        label: m.text.slice(0, 80),
+        hint: "Message",
+        run: () => roomId && openChat(roomId),
+      })),
     ...rooms.slice(0, 8).map((r) => ({
       id: r.id,
       label: `Open ${r.title}`,
@@ -595,6 +640,11 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
     backToDesk,
     goSettings,
     createTask,
+    createChannel,
+    replyParent,
+    setReplyParent,
+    reactions,
+    reactTo,
     addPerson,
     run,
     pingTyping,

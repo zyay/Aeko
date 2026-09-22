@@ -21,13 +21,14 @@ export function decryptLine(
   userEmail: string | null,
   plaintext: string,
   at?: number,
+  parentId?: string | null,
 ): Line {
   if (plaintext.startsWith(AEKO_PREFIX) || AGENT_PREFIX_RE.test(plaintext)) {
     const parsed = parseAssistantPayload(plaintext);
-    return { id, role: "aeko", text: parsed.text, at, agentId: parsed.agentId };
+    return { id, role: "aeko", text: parsed.text, at, agentId: parsed.agentId, parentId };
   }
   const role = from === userEmail ? "user" : "member";
-  return { id, role, text: plaintext, at, author: role === "member" ? from : undefined };
+  return { id, role, text: plaintext, at, author: role === "member" ? from : undefined, parentId };
 }
 
 export function buildChatHistory(lines: Line[], system: string, extraContext: string, maxTurns = 20): ChatMessage[] {
