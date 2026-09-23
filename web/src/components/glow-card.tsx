@@ -1,7 +1,4 @@
-"use client";
-
 import type { ComponentPropsWithoutRef, ElementType, ReactNode } from "react";
-import { BeamFrame } from "@/components/beam-frame";
 
 type GlowCardProps<T extends ElementType = "div"> = {
   as?: T;
@@ -14,16 +11,13 @@ export function GlowCard<T extends ElementType = "div">({
   as,
   children,
   className = "",
-  beam = true,
+  beam: _beam,
   ...rest
 }: GlowCardProps<T>) {
   const Tag = as ?? "div";
-  const body = (
-    <Tag className={`glow-card ${className}`.trim()} {...rest}>
-      <span className="glow-card-shine" aria-hidden />
+  return (
+    <Tag className={className} {...rest}>
       {children}
     </Tag>
   );
-  if (!beam) return body;
-  return <BeamFrame theme="dark">{body}</BeamFrame>;
 }

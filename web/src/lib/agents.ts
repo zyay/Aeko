@@ -1,4 +1,4 @@
-export type AgentTool = "web_search" | "http_fetch" | "file_read" | "code_run" | "doc_edit";
+export type AgentTool = "web_search" | "http_fetch" | "file_read" | "code_run" | "doc_edit" | "skill_read";
 
 export type AgentDef = {
   id: string;
@@ -19,7 +19,7 @@ export const AGENT_ROSTER: AgentDef[] = [
     accent: "#2f81f7",
     systemPrompt:
       "You are Signal Monitor, a research agent. Watch for changes, summarize sources, and surface what matters. Cite tool output when used. Be crisp and actionable.",
-    tools: ["web_search", "http_fetch", "file_read", "doc_edit"],
+    tools: ["web_search", "http_fetch", "file_read", "doc_edit", "skill_read"],
   },
   {
     id: "code-runner",
@@ -29,7 +29,7 @@ export const AGENT_ROSTER: AgentDef[] = [
     accent: "#3fb950",
     systemPrompt:
       "You are Code Runner, an engineering agent. Write clean code, explain tradeoffs, and debug step by step. Prefer fenced code blocks.",
-    tools: ["http_fetch", "code_run", "file_read"],
+    tools: ["http_fetch", "code_run", "file_read", "skill_read"],
   },
   {
     id: "researcher",
@@ -38,7 +38,7 @@ export const AGENT_ROSTER: AgentDef[] = [
     avatar: "/agents/a.svg",
     accent: "#58a6ff",
     systemPrompt: "You are Researcher. Combine sources, compare options, and produce structured briefs with clear recommendations.",
-    tools: ["web_search", "http_fetch", "file_read", "doc_edit"],
+    tools: ["web_search", "http_fetch", "file_read", "doc_edit", "skill_read"],
   },
   {
     id: "writer",
@@ -47,7 +47,7 @@ export const AGENT_ROSTER: AgentDef[] = [
     avatar: "/agents/aeko.svg",
     accent: "#a371f7",
     systemPrompt: "You are Writer. Draft polished prose, specs, and messages. Match tone to the audience.",
-    tools: ["file_read", "doc_edit", "web_search"],
+    tools: ["file_read", "doc_edit", "web_search", "skill_read"],
   },
   {
     id: "aeko",
@@ -56,7 +56,7 @@ export const AGENT_ROSTER: AgentDef[] = [
     avatar: "/agents/aeko.svg",
     accent: "#2f81f7",
     systemPrompt: "You are Aeko, a sharp personal assistant. Be concise, useful, and direct.",
-    tools: ["web_search", "http_fetch", "file_read", "code_run", "doc_edit"],
+    tools: ["web_search", "http_fetch", "file_read", "code_run", "doc_edit", "skill_read"],
   },
 ];
 

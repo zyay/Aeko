@@ -2,40 +2,33 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import { motion } from "framer-motion";
+import {
+  CommentIcon,
+  GearIcon,
+  GraphIcon,
+  HomeIcon,
+  BookIcon,
+  MortarBoardIcon,
+  RepoIcon,
+  ZapIcon,
+} from "@primer/octicons-react";
+import { Icon } from "@/components/icons";
+import { FloraFrame, useFloraTheme } from "@/components/flora-shell";
 
-const NAV = [
-  { href: "/learn/plan", label: "Home", icon: "⌂" },
-  { href: "/learn/library", label: "Library", icon: "▤" },
-  { href: "/learn/vocabulary", label: "Vocab", icon: "+" },
-  { href: "/learn/chat", label: "Chat", icon: "◉" },
-  { href: "/learn/skills", label: "Skills", icon: "◈" },
+const SIDEBAR: { href: string; label: string; icon: typeof HomeIcon }[] = [
+  { href: "/learn/plan", label: "Home", icon: HomeIcon },
+  { href: "/learn/library", label: "Library", icon: BookIcon },
+  { href: "/learn/vocabulary", label: "Vocabulary", icon: MortarBoardIcon },
+  { href: "/learn/chat", label: "Chat", icon: CommentIcon },
+  { href: "/learn/skills", label: "Skills", icon: RepoIcon },
+  { href: "/learn/stats", label: "Statistics", icon: GraphIcon },
+  { href: "/learn/exams", label: "Exams", icon: ZapIcon },
+  { href: "/learn/collections", label: "Collections", icon: BookIcon },
+  { href: "/learn/mcp", label: "MCP", icon: GearIcon },
+  { href: "/learn/settings", label: "Settings", icon: GearIcon },
 ];
-
-const MORE = [
-  { href: "/learn/stats", label: "Statistics" },
-  { href: "/learn/exams", label: "Exams" },
-  { href: "/learn/collections", label: "Collections" },
-  { href: "/learn/mcp", label: "MCP studio" },
-  { href: "/learn/settings", label: "Tutor settings" },
-];
-
-const SIDEBAR = [
-  ...NAV,
-  { href: "/learn/stats", label: "Statistics", icon: "▥" },
-  { href: "/learn/exams", label: "Exams", icon: "✓" },
-  { href: "/learn/collections", label: "Collections", icon: "☰" },
-  { href: "/learn/mcp", label: "MCP studio", icon: "⚙" },
-  { href: "/learn/settings", label: "Settings", icon: "⚙" },
-];
-
-function AbcLogo() {
-  return (
-    <div className="learn-logo" aria-hidden>
-      <span />
-    </div>
-  );
-}
 
 export function LearnShell({
   title,
@@ -49,81 +42,48 @@ export function LearnShell({
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const [moreOpen, setMoreOpen] = useState(false);
+  const { theme, setMode } = useFloraTheme();
 
   return (
-    <div className="learn-root">
-      <div className="learn-shell">
-        <aside className="learn-sidebar">
-          <Link href="/learn/plan" className="learn-brand">
-            <AbcLogo />
-            abc
-          </Link>
-          <nav className="learn-nav" aria-label="Learn">
-            {SIDEBAR.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={pathname === item.href || pathname.startsWith(item.href + "/") ? "learn-nav-link on" : "learn-nav-link"}
-              >
-                <span className="learn-nav-icon" aria-hidden>
-                  {item.icon}
-                </span>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="learn-sidebar-foot">learn english easily</div>
-        </aside>
-
-        <div className="learn-main">
-          <header className="learn-topbar">
-            <div>
-              <h1>{title}</h1>
-              {subtitle && <p>{subtitle}</p>}
-            </div>
-            {action}
-          </header>
-          <div className="learn-scroll">{children}</div>
-        </div>
-      </div>
-
-      <nav className="learn-mobile-nav" aria-label="Mobile">
-        {NAV.map((item) => (
-          <Link key={item.href} href={item.href} className={pathname === item.href || pathname.startsWith(item.href + "/") ? "on" : ""}>
-            <span aria-hidden>{item.icon}</span>
-            {item.label}
-          </Link>
-        ))}
-        <button type="button" className={moreOpen ? "on" : ""} onClick={() => setMoreOpen((v) => !v)} aria-expanded={moreOpen}>
-          <span aria-hidden>⋯</span>
-          More
+    <div className="flora learn-root" data-theme={theme}>
+      <div className="flora-stage" />
+      <header className="flora-top">
+        <Link href="/learn/plan" className="flora-brand">
+          <span className="flora-mark" aria-hidden>
+            <i /><i /><i /><i />
+          </span>
+          <span className="flora-title">Learn</span>
+        </Link>
+        <button type="button" className="flora-share" onClick={() => setMode(theme === "dark" ? "light" : "dark")}>
+          {theme === "dark" ? "White" : "Black"}
         </button>
-      </nav>
-
-      {moreOpen && (
-        <div className="learn-more-sheet" role="dialog" aria-label="More navigation">
-          {MORE.map((item) => (
-            <Link key={item.href} href={item.href} onClick={() => setMoreOpen(false)}>
-              {item.label}
+      </header>
+      <nav className="flora-rail" aria-label="Learn">
+        {SIDEBAR.map((item) => {
+          const on = pathname === item.href || pathname.startsWith(item.href + "/");
+          return (
+            <Link key={item.href} href={item.href} className={on ? "on" : ""} aria-label={item.label} title={item.label}>
+              <Icon icon={item.icon} size={16} />
             </Link>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </nav>
+      <motion.main className="flora-learn" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 420, damping: 34 }}>
+        <header>
+          <h1>{title}</h1>
+          {subtitle && <p>{subtitle}</p>}
+          {action}
+        </header>
+        {children}
+      </motion.main>
     </div>
   );
 }
 
 export function LearnAuthShell({ children }: { children: ReactNode }) {
   return (
-    <div className="learn-root learn-auth">
-      <div>
-        <Link href="/learn" className="learn-brand" style={{ justifyContent: "center", marginBottom: 24 }}>
-          <AbcLogo />
-          abc
-        </Link>
-        {children}
-      </div>
-    </div>
+    <FloraFrame>
+      <div className="flora-sheet flora-auth-card">{children}</div>
+    </FloraFrame>
   );
 }

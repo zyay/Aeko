@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AGENT_ROSTER, setRoomAgentId } from "@/lib/agents";
+import { EmptyState } from "@/components/ui-kit";
 import type { Line } from "@/components/aeko-app-types";
 import { encodeCanvas, encodeNote, encodePatch } from "@/lib/chat-history";
+import { listInstalledSkills, roomSkillIds, toggleRoomSkill } from "@/lib/skill-context";
 
 type Patch = { id: string; title: string; status: "open" | "review" | "merged" };
 type Audit = { id: string; actor: string; action: string; createdAt: number };
@@ -35,6 +37,8 @@ export function ChannelExtras({
   const [note, setNote] = useState("");
   const [patchTitle, setPatchTitle] = useState("");
   const [audit, setAudit] = useState<Audit[]>([]);
+  const [skills, setSkills] = useState(listInstalledSkills);
+  const [pinned, setPinned] = useState<string[]>([]);
 
   const canvas = useMemo(() => {
     const rows = messages.filter((m) => m.record === "canvas");
@@ -56,6 +60,20 @@ export function ChannelExtras({
   useEffect(() => {
     setDraft(canvas);
   }, [canvas]);
+
+  useEffect(() => {
+    const refresh = () => {
+      setSkills(listInstalledSkills());
+      setPinned(roomSkillIds(roomId));
+    };
+    refresh();
+    window.addEventListener("abc-skills-change", refresh);
+    window.addEventListener("aeko-room-skills", refresh);
+    return () => {
+      window.removeEventListener("abc-skills-change", refresh);
+      window.removeEventListener("aeko-room-skills", refresh);
+    };
+  }, [roomId]);
 
   useEffect(() => {
     void fetch(`/api/rooms/${roomId}/audit`)
@@ -136,6 +154,18 @@ export function ChannelExtras({
           ))}
         </form>
       )}
+      <div>
+        <p>Channel skills</p>
+        {skills.length === 0 && <EmptyState compact title="No skills yet" body="Install one on the desk Skills tab, then pin it to this channel." />}
+        {skills.slice(0, 8).map((s) => (
+          <p key={s.id}>
+            {s.name}
+            <button type="button" onClick={() => setPinned(toggleRoomSkill(roomId, s.id))}>
+              {pinned.includes(s.id) ? "Pinned" : "Pin"}
+            </button>
+          </p>
+        ))}
+      </div>
       <div className="work-tabs">
         {AGENT_ROSTER.map((a) => (
           <button key={a.id} type="button" className="head-chip" onClick={() => setRoomAgentId(roomId, a.id)}>
@@ -145,7 +175,7 @@ export function ChannelExtras({
       </div>
       {tab === "audit" && (
         <div>
-          {audit.length === 0 && <p>No audit events yet.</p>}
+          {audit.length === 0 && <EmptyState compact title="No audit yet" body="Sends, invites, and workflow runs will be listed here." />}
           {audit.map((a) => (
             <p key={a.id}>
               {a.actor} · {a.action} · {new Date(a.createdAt).toLocaleString()}

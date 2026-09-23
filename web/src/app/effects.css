@@ -155,7 +155,11 @@
   align-items: center;
   justify-content: center;
   padding: 32px 24px;
+  background: #f4f5f7;
 }
+.auth-gate-eyebrow { margin: 0 0 8px; color: #8e8e93; font-size: 13px; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; }
+.auth-gate-title { margin: 0 0 16px; font-size: 40px; letter-spacing: -0.045em; line-height: 1.05; color: #1c1c1e; }
+.auth-gate-points { margin: 0; padding-left: 18px; color: #8e8e93; line-height: 1.6; }
 .auth-gate-layout {
   position: relative;
   z-index: 1;

@@ -1,31 +1,19 @@
 import Link from "next/link";
+import { FloraFrame } from "@/components/flora-shell";
 import "./learn.css";
 
 export default function LearnWelcomePage() {
   return (
-    <div className="learn-root learn-welcome">
-      <div className="learn-brand" style={{ fontSize: 22 }}>
-        <div className="learn-logo" aria-hidden>
-          <span />
-        </div>
-        abc
-      </div>
-      <h1>Learn English easily</h1>
-      <p>Personal plan, library, vocabulary, exams, and GPT conversation — in one intelligent workspace.</p>
-      <div className="learn-welcome-actions">
-        <Link href="/learn/auth/signup" className="learn-btn primary">
-          Sign up
-        </Link>
-        <Link href="/learn/auth/signin" className="learn-btn secondary">
-          Sign in
-        </Link>
-        <Link href="/learn/skills" className="learn-btn secondary">
-          Skills hub
-        </Link>
-        <Link href="/learn/mcp" className="learn-btn secondary">
-          MCP studio
-        </Link>
-      </div>
-    </div>
+    <FloraFrame>
+      <section className="flora-sheet flora-auth-card">
+        <span className="flora-mark" aria-hidden>
+          <i /><i /><i /><i />
+        </span>
+        <h1>Learn</h1>
+        <p>Your plan, library, and practice stay on this device.</p>
+        <Link href="/login?callbackUrl=/learn/onboarding" className="learn-btn primary full">Get started</Link>
+        <Link href="/login?callbackUrl=/learn/plan" className="learn-btn secondary full">Sign in</Link>
+      </section>
+    </FloraFrame>
   );
 }

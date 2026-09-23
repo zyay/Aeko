@@ -1,18 +1,17 @@
-"use client";
+﻿"use client";
 
-import { FormEvent } from "react";
+import { FormEvent, useState } from "react";
 import { saveBrain } from "@/lib/crypto";
 import { setRoomAgentId } from "@/lib/agents";
 import type { View } from "@/components/aeko-app-types";
 import { CommandPalette } from "@/components/command-palette";
-import { ActivityRail, NotificationDrawer } from "@/components/activity-rail";
+import { NotificationDrawer } from "@/components/activity-rail";
 import { InviteModal, RenameModal } from "@/components/modals";
 import { WorkspaceSkeleton } from "@/components/workspace-skeleton";
 import { BrainForm } from "@/components/brain-view";
 import { ChatView } from "@/components/chat-view";
 import { DeskView } from "@/components/desk-view";
-import { WorkspaceRoot, WorkspaceShell } from "@/components/workspace-shell";
-import { WorkspaceSidebar } from "@/components/workspace-sidebar";
+import { FloraShell, type FloraTab } from "@/components/flora-shell";
 import { formatTime, useAekoWorkspace } from "@/hooks/use-aeko-workspace";
 
 export function AekoApp({
@@ -25,6 +24,7 @@ export function AekoApp({
   initialView?: View;
 }) {
   const ws = useAekoWorkspace(userEmail, initialRoomId, initialView);
+  const [tab, setTab] = useState<FloraTab>("Home");
 
   if (!ws.ready || !ws.brain) return <WorkspaceSkeleton />;
 
@@ -48,80 +48,57 @@ export function AekoApp({
   }
 
   return (
-    <WorkspaceRoot>
+    <FloraShell
+      title={ws.view === "chat" ? ws.current || "Untitled" : "Workspace"}
+      userEmail={userEmail}
+      brainOk={ws.brain.valid}
+      taskCount={ws.notifications.length}
+      active={tab}
+      onActive={(next) => {
+        setTab(next);
+        if (ws.view === "chat") ws.backToDesk();
+      }}
+      onShare={() => ws.setShowInvite(true)}
+      onSearch={() => ws.setPaletteOpen(true)}
+      onSettings={ws.goSettings}
+      onCreateChannel={ws.createChannel}
+      onNotify={() => ws.setNotifyOpen(true)}
+    >
       {ws.view === "desk" && (
-        <WorkspaceShell
-          sidebar={
-            <WorkspaceSidebar
-              userEmail={userEmail}
-              brain={ws.brain}
-              activeAgentId={ws.activeAgentId}
-              busy={ws.busy}
-              roomId={ws.roomId}
-              deskSearch={ws.deskSearch}
-              deskSearchRef={ws.deskSearchRef}
-              filteredRooms={ws.filteredRooms}
-              onAgentSelect={(id) => {
-                ws.setActiveAgentId(id);
-                if (ws.roomId) setRoomAgentId(ws.roomId, id);
-              }}
-              onDeskSearch={ws.setDeskSearch}
-              onPalette={() => ws.setPaletteOpen(true)}
-              onCreateTask={ws.createTask}
-              onCreateChannel={ws.createChannel}
-              onSettings={ws.goSettings}
-              onOpenRoom={ws.openChat}
-            />
-          }
-        >
-          <div className="workspace-body">
-            <DeskView
-              userEmail={userEmail}
-              brain={ws.brain}
-              activeAgent={ws.activeAgent}
-              rooms={ws.rooms}
-              filteredRooms={ws.filteredRooms}
-              featured={ws.featured}
-              featuredPreview={ws.featuredPreview}
-              previews={ws.previews}
-              needsKey={ws.needsKey}
-              durable={ws.durable}
-              status={ws.status}
-              deskDraft={ws.deskDraft}
-              busy={ws.busy}
-              webMode={ws.webMode}
-              agentMode={ws.agentMode}
-              localMode={ws.localMode}
-              formatTime={formatTime}
-              onDeskDraft={ws.setDeskDraft}
-              onSubmit={(e: FormEvent) => {
-                e.preventDefault();
-                ws.run(ws.deskDraft.trim(), true);
-              }}
-              onPalette={() => ws.setPaletteOpen(true)}
-              onSettings={ws.goSettings}
-              onCreateTask={ws.createTask}
-              onInvite={() => ws.setShowInvite(true)}
-              onOpenRoom={ws.openChat}
-              onRunChip={(c) => ws.run(c, true)}
-              onWebMode={() => ws.setWebMode((v) => !v)}
-              onAgentMode={() => ws.setAgentMode((v) => !v)}
-              onFile={(file) => void ws.attachVaultFile(file)}
-            />
-            <ActivityRail
-              userEmail={userEmail}
-              members={ws.members}
-              typers={ws.typers}
-              busy={ws.busy}
-              activeAgentId={ws.activeAgentId}
-              enginePhase={ws.enginePhase}
-              notifications={ws.notifications}
-              onOpenNotifications={() => ws.setNotifyOpen(true)}
-            />
-          </div>
-        </WorkspaceShell>
+        <DeskView
+          activeAgent={ws.activeAgent}
+          filteredRooms={ws.filteredRooms}
+          previews={ws.previews}
+          needsKey={ws.needsKey}
+          durable={ws.durable}
+          status={ws.status}
+          deskDraft={ws.deskDraft}
+          busy={ws.busy}
+          webMode={ws.webMode}
+          agentMode={ws.agentMode}
+          formatTime={formatTime}
+          onDeskDraft={ws.setDeskDraft}
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault();
+            ws.run(ws.deskDraft.trim(), true);
+          }}
+          onPalette={() => ws.setPaletteOpen(true)}
+          onSettings={ws.goSettings}
+          onCreateTask={ws.createTask}
+          onOpenRoom={ws.openChat}
+          onRunChip={(c) => ws.run(c, true)}
+          onWebMode={() => ws.setWebMode((v) => !v)}
+          onAgentMode={() => ws.setAgentMode((v) => !v)}
+          onFile={(file) => void ws.attachVaultFile(file)}
+          tab={tab}
+          onTab={setTab}
+          onAgentSelect={(id) => {
+            ws.setActiveAgentId(id);
+            if (ws.roomId) setRoomAgentId(ws.roomId, id);
+          }}
+          roomId={ws.roomId}
+        />
       )}
-
       {ws.view === "chat" && (
         <ChatView
           current={ws.current}
@@ -175,7 +152,6 @@ export function AekoApp({
           onRegenerate={ws.regenerateFrom}
         />
       )}
-
       <InviteModal
         open={ws.showInvite}
         email={ws.invite}
@@ -198,6 +174,6 @@ export function AekoApp({
       />
       <NotificationDrawer open={ws.notifyOpen} items={ws.notifications} onClose={() => ws.setNotifyOpen(false)} />
       <CommandPalette open={ws.paletteOpen} onClose={() => ws.setPaletteOpen(false)} actions={ws.paletteActions} />
-    </WorkspaceRoot>
+    </FloraShell>
   );
 }

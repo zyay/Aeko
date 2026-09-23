@@ -2,17 +2,11 @@
 
 import JSZip from "jszip";
 import type { SkillEntry } from "@/lib/skills-registry";
+import { listInstalledSkills } from "@/lib/skill-context";
 
 const KEY = "abc-installed-skills";
 
-export function listInstalledSkills(): SkillEntry[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(KEY) || "[]") as SkillEntry[];
-  } catch {
-    return [];
-  }
-}
+export { listInstalledSkills };
 
 export function isSkillInstalled(id: string) {
   return listInstalledSkills().some((s) => s.id === id);
