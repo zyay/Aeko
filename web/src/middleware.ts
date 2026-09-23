@@ -17,6 +17,12 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
   const loggedIn = Boolean(req.auth?.user?.email);
 
+  if (pathname === "/api/auth/signin" && req.method === "GET") {
+    const login = new URL("/login", req.url);
+    req.nextUrl.searchParams.forEach((value, key) => login.searchParams.set(key, value));
+    return NextResponse.redirect(login);
+  }
+
   if (loggedIn && pathname === "/login") {
     return NextResponse.redirect(new URL("/", req.url));
   }

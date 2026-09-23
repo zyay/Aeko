@@ -1,6 +1,6 @@
 "use client";
 
-import { StatusPill } from "@/components/ui-kit";
+import { EmptyState, StatusPill } from "@/components/ui-kit";
 import { AgentOrb } from "@/components/agent-orb";
 import { getAgent } from "@/lib/agents";
 import type { Line } from "@/components/aeko-app-types";
@@ -56,7 +56,7 @@ export function ActivityRail({
       <div className="activity-section">
         <h3>Recent</h3>
         {notifications.length === 0 ? (
-          <p className="activity-empty">No new activity</p>
+          <EmptyState compact title="No activity yet" body="Mentions, notes, and agent runs will show up here." />
         ) : (
           <ul className="activity-feed">
             {notifications.slice(0, 6).map((n) => (
@@ -84,7 +84,7 @@ export function NotificationDrawer({
       <div className="modal notification-drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Notifications">
         <h2>Notifications</h2>
         {items.length === 0 ? (
-          <p className="activity-empty">You are all caught up.</p>
+          <EmptyState compact title="All caught up" body="New notifications will land in this list." />
         ) : (
           <ul className="activity-feed">
             {items.map((n) => (

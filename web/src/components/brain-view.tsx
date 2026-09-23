@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import type { BrainConfig } from "@/components/aeko-app-types";
-import { FxBackdrop } from "@/components/fx-backdrop";
 import { shouldUseProxy } from "@/lib/llm";
-import { AppFooter, BrandMark, IconBack } from "@/components/ui-primitives";
+import { AppFooter, IconBack } from "@/components/ui-primitives";
+import { FloraFrame } from "@/components/flora-shell";
 
 export function BrainForm({
   userEmail,
@@ -22,15 +22,12 @@ export function BrainForm({
   const step = cfg.onboardingStep ?? (cfg.valid ? 3 : 1);
 
   return (
-    <div className="aeko-root onboard">
-      <FxBackdrop />
-      <div className="auth-shell">
-        <BrandMark size={48} />
-        <div className="meet">
-          <button className="back" type="button" onClick={onBack}>
-            <IconBack /> Back to workspace
-          </button>
-          <h1>Model &amp; account</h1>
+    <FloraFrame>
+      <div className="flora-sheet flora-auth-card meet">
+        <button className="back" type="button" onClick={onBack}>
+          <IconBack /> Back to workspace
+        </button>
+        <h1>Settings</h1>
           <p className="sub">
             Step {step}/3 · Signed in as {userEmail}
           </p>
@@ -96,9 +93,8 @@ export function BrainForm({
               Sign out
             </button>
           </form>
-        </div>
-        <AppFooter />
+          <AppFooter />
       </div>
-    </div>
+    </FloraFrame>
   );
 }

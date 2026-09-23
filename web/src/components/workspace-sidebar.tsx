@@ -113,7 +113,7 @@ export function WorkspaceSidebar({
         </button>
         <div className="sidebar-section-label">{section === "home" ? "Inbox" : section}</div>
         {shown.length === 0 ? (
-          <p style={{ padding: "6px 10px", fontSize: 12, color: "var(--sidebar-muted)" }}>Nothing here yet</p>
+          <p className="sidebar-empty">Nothing here yet</p>
         ) : (
           shown.slice(0, 12).map((r) => (
             <button key={r.id} type="button" className="sidebar-room" onClick={() => onOpenRoom(r.id)}>

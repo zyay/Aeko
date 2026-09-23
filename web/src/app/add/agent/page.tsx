@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
+import { FloraFrame } from "@/components/flora-shell";
 import { getAgent } from "@/lib/agents";
 
 function AddAgent() {
@@ -17,11 +18,12 @@ function AddAgent() {
   }, [agent.id, router]);
 
   return (
-    <main style={{ minHeight: "100dvh", display: "grid", placeItems: "center", padding: 24 }}>
-      <p>
-        Adding <strong>{agent.name}</strong> to your workspace…
-      </p>
-    </main>
+    <FloraFrame>
+      <div className="flora-sheet flora-auth-card">
+        <h1>Adding {agent.name}</h1>
+        <p>This agent is pinned to your workspace.</p>
+      </div>
+    </FloraFrame>
   );
 }
 

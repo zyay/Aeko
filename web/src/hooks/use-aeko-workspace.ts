@@ -446,6 +446,7 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
         agentMode,
         vault: source,
         vaultName: vault.trim() ? vaultName : canvas ? "canvas" : vaultName,
+        roomId: activeRoomId,
         onTool: (toolLine) => setMessages((m) => [...m, toolLine]),
       });
 
@@ -471,6 +472,7 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
           setMessages((m) => m.map((line) => (line.id === replyId ? { ...line, text: line.text + chunk } : line)));
         },
         onTool: (toolLine) => setMessages((m) => [...m, toolLine]),
+        toolCtx: { prompt: text, vault: source, vaultName: vault.trim() ? vaultName : "canvas" },
       });
 
       const doc = full.match(/\[\[doc\]\]([\s\S]*?)\[\[\/doc\]\]/);

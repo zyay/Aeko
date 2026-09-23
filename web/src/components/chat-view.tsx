@@ -5,9 +5,10 @@ import { AgentOrb } from "@/components/agent-orb";
 import { ToolTracePanel } from "@/components/activity-rail";
 import { ThinkingOrb } from "@/components/thinking-orb";
 import { Icon, Icons } from "@/components/icons";
-import { IconBtn } from "@/components/ui-kit";
+import { EmptyState, IconBtn } from "@/components/ui-kit";
 import type { BrainConfig, Line } from "@/components/aeko-app-types";
 import { AGENT_ROSTER, mentionQuery, type AgentDef } from "@/lib/agents";
+import { listInstalledSkills, skillQuery } from "@/lib/skill-context";
 import { ChannelExtras } from "@/components/channel-extras";
 import {
   IconAttach,
@@ -157,9 +158,10 @@ export function ChatView({
         <div className="thread-body-inner">
           {messages.length === 0 && (
             <div className="empty-chat">
-              <AgentOrb state={busy ? enginePhase : "idle"} size={72} />
-              <h3>Start the conversation</h3>
-              <p>Ask for summaries, code, research, or attach a file from the toolbar below.</p>
+              <EmptyState
+                title="No messages yet"
+                body="This channel is quiet. Send a note, mention an agent, or pin a skill and the thread starts here."
+              />
             </div>
           )}
           {messages.filter((m) => !m.parentId && !m.record).map((m) => (
@@ -228,6 +230,20 @@ export function ChatView({
               }}
             />
             <div className="composer-input">
+              {skillQuery(draft) !== null && (
+                <div className="mention-pop" role="listbox" aria-label="Skills">
+                  {listInstalledSkills()
+                    .filter((s) => s.name.toLowerCase().includes(skillQuery(draft) || "") || s.id.includes(skillQuery(draft) || ""))
+                    .slice(0, 6)
+                    .map((s) => (
+                      <button key={s.id} type="button" onClick={() => onDraft(draft.replace(/(?:^|\s)\/([a-z0-9 -]*)$/i, ` ${s.name} `).trimStart())}>
+                        {s.name}
+                        <span>{s.description}</span>
+                      </button>
+                    ))}
+                  {listInstalledSkills().length === 0 && <p>Install a skill from the desk Skills tab, then type /.</p>}
+                </div>
+              )}
               {mentionQuery(draft) !== null && (
                 <div className="mention-pop" role="listbox" aria-label="Agents">
                   {AGENT_ROSTER.filter((a) => a.name.toLowerCase().includes(mentionQuery(draft) || "") || a.id.includes(mentionQuery(draft) || "")).map((a) => (
@@ -248,7 +264,7 @@ export function ChatView({
                   onDraft(e.target.value);
                   onTyping(true);
                 }}
-                placeholder="Message the channel. @Researcher, @Writer, @Signal Monitor, @Code Runner, or @Aeko"
+                placeholder="Message the channel. @Researcher, @Writer, or / for a skill"
                 rows={1}
                 aria-label="Message"
                 onKeyDown={(e) => {

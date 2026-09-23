@@ -23,6 +23,11 @@ class OnlineTools(
             .filter { it.isNotBlank() }
             .take(5)
             .toList()
+        val links = Regex("""class="result__a"[^>]*href="([^"]+)"""", RegexOption.IGNORE_CASE)
+            .findAll(html)
+            .map { decodeResultUrl(it.groupValues[1]) }
+            .take(5)
+            .toList()
         val snippets = Regex("""class="result__snippet"[^>]*>(.*?)</""", RegexOption.IGNORE_CASE)
             .findAll(html)
             .map { it.groupValues[1].replace(Regex("<[^>]+>"), "").trim() }
@@ -31,9 +36,10 @@ class OnlineTools(
             .toList()
         if (titles.isEmpty()) return "No public search hits for \"$q\"."
         return titles.mapIndexed { i, title ->
+            val link = links.getOrNull(i).orEmpty()
             val snip = snippets.getOrNull(i).orEmpty()
-            "${i + 1}. $title${if (snip.isNotBlank()) " — $snip" else ""}"
-        }.joinToString("\n")
+            "${i + 1}. $title${if (link.isNotBlank()) "\n$link" else ""}${if (snip.isNotBlank()) "\n$snip" else ""}"
+        }.joinToString("\n\n")
     }
 
     fun fetch(rawUrl: String): String {
@@ -48,6 +54,13 @@ class OnlineTools(
             .trim()
             .take(4000)
         return text.ifBlank { "Empty page." }
+    }
+
+    private fun decodeResultUrl(raw: String): String {
+        val href = raw.replace("&amp;", "&")
+        val uddg = Regex("""[?&]uddg=([^&]+)""").find(href)?.groupValues?.get(1)
+        if (uddg != null) return java.net.URLDecoder.decode(uddg, Charsets.UTF_8.name())
+        return if (href.startsWith("https://")) href else ""
     }
 
     private fun get(url: String): String? {

@@ -1,8 +1,9 @@
 import type { MouseEvent, ReactNode } from "react";
 import type { Line } from "@/components/aeko-app-types";
+import { Icon, Icons } from "@/components/icons";
+import { FloraFrame } from "@/components/flora-shell";
 import { MarkdownContent } from "@/components/markdown-content";
 import { getAgent } from "@/lib/agents";
-import { Icon, Icons } from "@/components/icons";
 
 const COLORS = ["#5e5ce6", "#0071e3", "#64d2ff", "#30b0c7", "#ac8e68", "#86868b"];
 
@@ -125,25 +126,16 @@ export function IconTeam({ size = 16 }: { size?: number }) {
 
 export function BrandMark({ size = 32 }: { size?: number }) {
   return (
-    <span className="brand-mark" style={{ width: size, height: size }} aria-hidden>
-      <svg viewBox="0 0 32 32" fill="none">
-        <rect width="32" height="32" rx="10" fill="url(#aeko-mark)" />
-        <path d="M10.5 22V10h2.6l2.8 6.1L18.4 10h2.4v12h-2.1v-6.4l-2.6 6.4h-1.8l-2.8-6.4V22h-2.2z" fill="#fff" />
-        <defs>
-          <linearGradient id="aeko-mark" x1="6" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#0071e3" />
-            <stop offset="1" stopColor="#5e5ce6" />
-          </linearGradient>
-        </defs>
-      </svg>
+    <span className="brand-mark flora-mark" style={{ width: size, height: size }} aria-hidden>
+      <i /><i /><i /><i />
     </span>
   );
 }
 
 export function LegalPage({ title, children, backHref = "/" }: { title: string; children: ReactNode; backHref?: string }) {
   return (
-    <main className="aeko-root onboard">
-      <div className="legal-shell">
+    <FloraFrame>
+      <div className="flora-sheet" style={{ width: "min(680px, 100%)" }}>
         <a className="back" href={backHref}>
           <IconBack /> Back
         </a>
@@ -153,21 +145,20 @@ export function LegalPage({ title, children, backHref = "/" }: { title: string; 
         </div>
         <AppFooter />
       </div>
-    </main>
+    </FloraFrame>
   );
 }
 
 export function AndroidHandoff({ deepLink }: { deepLink: string }) {
   return (
-    <main className="aeko-root onboard">
-      <div className="android-card">
-        <div className="android-spinner" aria-hidden />
+    <FloraFrame>
+      <div className="flora-sheet flora-auth-card android-card">
         <h1>Opening Aeko on Android</h1>
         <p>Your sign-in code is ready. If nothing happens, tap below.</p>
         <a className="btn-primary" href={deepLink}>
           Open Android app
         </a>
       </div>
-    </main>
+    </FloraFrame>
   );
 }
