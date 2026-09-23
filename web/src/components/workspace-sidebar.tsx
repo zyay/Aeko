@@ -145,7 +145,7 @@ export function WorkspaceSidebar({
             <button type="submit">Create</button>
           </form>
         )}
-        {section === "workflows" && <WorkflowForm />}
+        {section === "workflows" && <WorkflowForm roomId={roomId} />}
       </nav>
       <div className="sidebar-footer">
         <StatusPill ok={brain.valid} label={brain.valid ? "Model live" : "Model offline"} />
@@ -163,9 +163,9 @@ export function WorkspaceSidebar({
   );
 }
 
-function WorkflowForm() {
+function WorkflowForm({ roomId }: { roomId: string | null }) {
   const [name, setName] = useState("Triage");
-  const [yaml, setYaml] = useState("on: message\nagent: aeko");
+  const [yaml, setYaml] = useState(`on: message\nchannel: ${roomId ?? ""}\nagent: aeko`);
   const [note, setNote] = useState("");
   return (
     <form

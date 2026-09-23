@@ -7,7 +7,7 @@ import { ThinkingOrb } from "@/components/thinking-orb";
 import { Icon, Icons } from "@/components/icons";
 import { IconBtn } from "@/components/ui-kit";
 import type { BrainConfig, Line } from "@/components/aeko-app-types";
-import type { AgentDef } from "@/lib/agents";
+import { AGENT_ROSTER, mentionQuery, type AgentDef } from "@/lib/agents";
 import { ChannelExtras } from "@/components/channel-extras";
 import {
   IconAttach,
@@ -62,6 +62,7 @@ export function ChatView({
   replyParent = null,
   onReact,
   onClearReply,
+  onShareRecord,
 }: {
   current: string;
   roomId: string | null;
@@ -102,6 +103,7 @@ export function ChatView({
   replyParent?: string | null;
   onReact?: (messageId: string, emoji: string) => void;
   onClearReply?: () => void;
+  onShareRecord?: (plaintext: string) => void;
 }) {
   return (
     <div className="chat-overlay">
@@ -160,7 +162,7 @@ export function ChatView({
               <p>Ask for summaries, code, research, or attach a file from the toolbar below.</p>
             </div>
           )}
-          {messages.filter((m) => !m.parentId).map((m) => (
+          {messages.filter((m) => !m.parentId && !m.record).map((m) => (
             <div key={m.id}>
               <MessageRow line={m} busy={busy} onContextMenu={(e) => { e.preventDefault(); onContextMenu(m); }} />
               <div className="msg-actions">
@@ -178,7 +180,7 @@ export function ChatView({
               ))}
             </div>
           ))}
-          {roomId && <ChannelExtras roomId={roomId} />}
+          {roomId && onShareRecord && <ChannelExtras roomId={roomId} messages={messages} onShare={onShareRecord} />}
           <ToolTracePanel lines={messages} />
           {busy && enginePhase === "thinking" && <ThinkingOrb />}
         </div>
@@ -226,13 +228,27 @@ export function ChatView({
               }}
             />
             <div className="composer-input">
+              {mentionQuery(draft) !== null && (
+                <div className="mention-pop" role="listbox" aria-label="Agents">
+                  {AGENT_ROSTER.filter((a) => a.name.toLowerCase().includes(mentionQuery(draft) || "") || a.id.includes(mentionQuery(draft) || "")).map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => onDraft(draft.replace(/@([a-z0-9 -]*)$/i, `@${a.name} `))}
+                    >
+                      @{a.name}
+                      <span>{a.tagline}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
               <textarea
                 value={draft}
                 onChange={(e) => {
                   onDraft(e.target.value);
                   onTyping(true);
                 }}
-                placeholder={agentMode ? "Message agent… (@aeko to invoke)" : "Message team… (turn on Agent to invoke AI)"}
+                placeholder="Message the channel. @Researcher, @Writer, @Signal Monitor, @Code Runner, or @Aeko"
                 rows={1}
                 aria-label="Message"
                 onKeyDown={(e) => {

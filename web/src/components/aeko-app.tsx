@@ -167,6 +167,7 @@ export function AekoApp({
           replyParent={ws.replyParent}
           onReact={(id, emoji) => void ws.reactTo(id, emoji)}
           onClearReply={() => ws.setReplyParent(null)}
+          onShareRecord={(text) => void ws.shareRecord(text)}
           onCopy={(line) => {
             navigator.clipboard.writeText(line.text);
             ws.setSheet(null);

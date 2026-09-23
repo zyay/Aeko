@@ -11,7 +11,7 @@ import {
   unwrapRoomKey,
   wrapRoomKey,
 } from "@/lib/crypto";
-import { buildChatHistory, decryptLine } from "@/lib/chat-history";
+import { buildChatHistory, decryptLine, encodeCanvas } from "@/lib/chat-history";
 import { buildAgentSystem, executeAgentTools, runAgentLoop, shouldInvokeAgent } from "@/lib/agent-engine";
 import { encodeAssistantPayload, AGENT_ROSTER, getAgent, getRoomAgentId, setRoomAgentId, parseAgentMention } from "@/lib/agents";
 import { ensureIdentity, syncIdentityToServer } from "@/lib/identity";
@@ -308,17 +308,33 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
   }
 
   async function postPlain(text: string, rid = roomId, key = roomKey, assistantAgentId?: string, parentId?: string | null) {
-    if (!rid || !key || !text.trim()) return;
-    if (localMode || rid.startsWith("local-")) return;
+    if (!rid || !key || !text.trim()) return [];
+    if (localMode || rid.startsWith("local-")) return [];
     const payload = assistantAgentId ? encodeAssistantPayload(text, assistantAgentId) : text;
     const enc = await encryptMessage(key, payload);
-    await fetch(`/api/rooms/${rid}/messages`, {
+    const res = await fetch(`/api/rooms/${rid}/messages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...enc, parentId: parentId ?? undefined }),
     });
+    const body = (await res.json().catch(() => ({}))) as { workflows?: string[] };
     await fetch(`/api/rooms/${rid}/notify`, { method: "POST" });
-    setPreviews((p) => ({ ...p, [rid]: { text: text.slice(0, 100), lastAt: Date.now() } }));
+    const preview = text.startsWith("[[canvas]]")
+      ? "Updated the channel document"
+      : text.startsWith("[[note]]")
+        ? "Media note"
+        : text.startsWith("[[patch]]")
+          ? "Patch"
+          : text.slice(0, 100);
+    setPreviews((p) => ({ ...p, [rid]: { text: preview, lastAt: Date.now() } }));
+    return body.workflows ?? [];
+  }
+
+  async function shareRecord(plaintext: string) {
+    if (!roomId || !roomKey || localMode) return;
+    const line = decryptLine(crypto.randomUUID(), userEmail, userEmail, plaintext, Date.now());
+    setMessages((m) => [...m, line]);
+    await postPlain(plaintext, roomId, roomKey);
   }
 
   function persistLocal(next: Line[]) {
@@ -353,12 +369,28 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
     if (isLocal) {
       appendLocalMessage(activeRoomId, userLine);
       persistLocal(nextMsgs);
-    } else if (activeKey) await postPlain(prompt, activeRoomId, activeKey, undefined, replyParent);
+    } else if (activeKey) {
+      const workflowIds = await postPlain(prompt, activeRoomId, activeKey, undefined, replyParent);
+      setReplyParent(null);
+      refreshRooms();
+      await fireWorkflow(workflowIds, prompt, nextMsgs);
+      return;
+    }
     setReplyParent(null);
     refreshRooms();
   }
 
-  async function invokeAgent(prompt: string, fromDesk = false) {
+  async function fireWorkflow(ids: string[], prompt: string, posted: Line[]) {
+    if (!ids.length) return;
+    const res = await fetch("/api/workflows");
+    const body = (await res.json().catch(() => ({}))) as { workflows?: { id: string; yaml: string; enabled: boolean }[] };
+    const flow = (body.workflows ?? []).find((f) => f.enabled && ids.includes(f.id));
+    if (!flow) return;
+    const agentId = flow.yaml.match(/^agent:\s*(\S+)/m)?.[1] ?? "aeko";
+    await invokeAgent(`@${agentId} ${prompt}`, false, posted);
+  }
+
+  async function invokeAgent(prompt: string, fromDesk = false, posted?: Line[]) {
     if (!prompt || busy || !brain) return;
     let activeRoomId = roomId;
     let activeKey = roomKey;
@@ -378,24 +410,33 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
     }
 
     const mention = parseAgentMention(prompt);
-    if (mention) setActiveAgentId(mention);
+    if (mention) {
+      setActiveAgentId(mention);
+      setRoomAgentId(activeRoomId, mention);
+    }
 
     const text = codeMode && !prompt.toLowerCase().includes("code") ? `Code Mode. ${prompt}` : prompt;
-    if (fromDesk) setDeskDraft("");
-    else setDraft("");
+    if (!posted) {
+      if (fromDesk) setDeskDraft("");
+      else setDraft("");
+    }
     const userLine: Line = { id: String(Date.now()), role: "user", text, at: Date.now() };
-    const nextMsgs = [...messages, userLine];
-    setMessages(nextMsgs);
-    if (isLocal) {
-      appendLocalMessage(activeRoomId, userLine);
-      persistLocal(nextMsgs);
-    } else if (activeKey) await postPlain(text, activeRoomId, activeKey);
+    const nextMsgs = posted ?? [...messages, userLine];
+    if (!posted) {
+      setMessages(nextMsgs);
+      if (isLocal) {
+        appendLocalMessage(activeRoomId, userLine);
+        persistLocal(nextMsgs);
+      } else if (activeKey) await postPlain(text, activeRoomId, activeKey);
+    }
+    const canvas = [...nextMsgs].reverse().find((m) => m.record === "canvas")?.text ?? "";
+    const source = vault.trim() ? vault : canvas;
 
     setBusy(true);
     setEnginePhase("thinking");
     const ctrl = new AbortController();
     abortRef.current = ctrl;
-    const agent = getAgent(getRoomAgentId(activeRoomId));
+    const agent = getAgent(mention ?? getRoomAgentId(activeRoomId));
     const replyId = String(Date.now() + 1);
 
     try {
@@ -403,15 +444,15 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
         tools: agent.tools,
         webMode,
         agentMode,
-        vault,
-        vaultName,
+        vault: source,
+        vaultName: vault.trim() ? vaultName : canvas ? "canvas" : vaultName,
         onTool: (toolLine) => setMessages((m) => [...m, toolLine]),
       });
 
       setMessages((m) => [...m, { id: replyId, role: "aeko", text: "", agentId: agent.id, at: Date.now() }]);
       setEnginePhase("speaking");
-      const system = buildAgentSystem(agent, { codeMode, vault: Boolean(vault), agentMode });
-      const extraContext = [vault ? `Vault:\n${vault.slice(0, 4000)}` : "", traces.length ? traces.join("\n\n") : ""]
+      const system = buildAgentSystem(agent, { codeMode, vault: Boolean(source), agentMode });
+      const extraContext = [source ? `Channel document:\n${source.slice(0, 4000)}` : "", traces.length ? traces.join("\n\n") : ""]
         .filter(Boolean)
         .join("\n\n");
       const useProxy = shouldUseProxy(brain.baseUrl, brain.mode, brain.proxyViaVercel);
@@ -432,14 +473,23 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
         onTool: (toolLine) => setMessages((m) => [...m, toolLine]),
       });
 
-      const replyLine: Line = { id: replyId, role: "aeko", text: full, at: Date.now(), agentId: agent.id, meta };
+      const doc = full.match(/\[\[doc\]\]([\s\S]*?)\[\[\/doc\]\]/);
+      const visible = doc ? full.replace(doc[0], "").trim() || "Updated the channel document." : full;
+      if (doc?.[1] && activeRoomId) {
+        const body = doc[1].trim();
+        setVault(body);
+        const canvasLine = decryptLine(crypto.randomUUID(), userEmail, userEmail, encodeCanvas(body), Date.now());
+        setMessages((m) => [...m.map((line) => (line.id === replyId ? { ...line, text: visible } : line)), canvasLine]);
+        if (!isLocal && activeKey) await postPlain(encodeCanvas(body), activeRoomId, activeKey);
+      }
+      const replyLine: Line = { id: replyId, role: "aeko", text: visible, at: Date.now(), agentId: agent.id, meta };
       setMessages((m) => {
         const merged = m.map((line) => (line.id === replyId ? replyLine : line));
         if (isLocal && activeRoomId) persistLocal(merged);
         return merged;
       });
 
-      if (!isLocal && activeKey) await postPlain(full, activeRoomId, activeKey, agent.id);
+      if (!isLocal && activeKey) await postPlain(visible, activeRoomId, activeKey, agent.id);
       refreshRooms();
     } catch (e) {
       const err = String(e);
@@ -533,7 +583,7 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
     { id: "settings", label: "Open settings", hint: "Model and account", run: goSettings },
     { id: "search", label: "Focus task search", hint: "Sidebar filter", run: () => deskSearchRef.current?.focus() },
     ...messages
-      .filter((m) => m.role !== "tool")
+      .filter((m) => m.role !== "tool" && !m.record)
       .slice(-12)
       .map((m) => ({
         id: `msg-${m.id}`,
@@ -653,5 +703,6 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
     renameTask,
     deleteTask,
     attachVaultFile,
+    shareRecord,
   };
 }

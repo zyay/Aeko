@@ -1,5 +1,5 @@
 import type { Line } from "@/components/aeko-app-types";
-import type { AgentDef, AgentTool } from "@/lib/agents";
+import { parseAgentMention, type AgentDef, type AgentTool } from "@/lib/agents";
 import type { BrainConfig } from "@/components/aeko-app-types";
 import type { ChatMessage } from "@/lib/llm";
 import { streamChat } from "@/lib/llm";
@@ -12,8 +12,8 @@ function wantsWeb(text: string) {
   return /search|look up|latest|news|what is|who is|weather|web|http/i.test(text);
 }
 
-export function shouldInvokeAgent(prompt: string, agentMode: boolean) {
-  return agentMode || /^@(aeko|signal|code|signal-monitor|code-runner|researcher|writer)\b/i.test(prompt) || /^\/agent\b/i.test(prompt);
+export function shouldInvokeAgent(prompt: string, _agentMode: boolean) {
+  return Boolean(parseAgentMention(prompt)) || /^\/agent\b/i.test(prompt);
 }
 
 async function runTool(
@@ -25,6 +25,7 @@ async function runTool(
   if (name === "http_fetch") return httpFetch(args.url || ctx.prompt.match(/https:\/\/[^\s]+/)?.[0] || "");
   if (name === "file_read") return readVault(ctx.vault, ctx.vaultName);
   if (name === "code_run") return runCodeSnippet(args.code || ctx.prompt);
+  if (name === "doc_edit") return `doc_edit:\nRewrite the channel document. Put the full new text between [[doc]] and [[/doc]]. Request: ${args.note || ctx.prompt}`;
   return `Unknown tool: ${name}`;
 }
 
@@ -42,7 +43,9 @@ export async function executeAgentTools(
   const traces: string[] = [];
   const allowSearch = opts.tools.includes("web_search");
   const allowFetch = opts.tools.includes("http_fetch");
-  const runSearch = allowSearch && (opts.webMode || opts.agentMode || wantsWeb(prompt));
+  const deep = /research|deep dive|investigate|prehľadaj|nájdi/i.test(prompt);
+  const asksLookup = wantsWeb(prompt) || deep;
+  const runSearch = allowSearch && (opts.webMode || asksLookup);
   const url = prompt.match(/https:\/\/[^\s]+/)?.[0];
 
   const emit = async (name: AgentTool, args: Record<string, string> = {}) => {
@@ -53,9 +56,14 @@ export async function executeAgentTools(
     return note;
   };
 
-  if (runSearch) await emit("web_search", { query: prompt });
+  if (runSearch) {
+    const found = await emit("web_search", { query: prompt.replace(/@[\w -]+/, "").trim() || prompt });
+    const discovered = found.match(/https:\/\/[^\s)]+/);
+    if (deep && allowFetch && discovered) await emit("http_fetch", { url: discovered[0] });
+  }
   if (allowFetch && url) await emit("http_fetch", { url });
   if (opts.vault?.trim() && opts.tools.includes("file_read")) await emit("file_read");
+  if (opts.tools.includes("doc_edit") && /document|canvas|doc|prepis|uprav/i.test(prompt)) await emit("doc_edit", { note: prompt });
   if (opts.tools.includes("code_run") && (/```/.test(prompt) || /\bcode\b/i.test(prompt))) await emit("code_run", { code: prompt });
 
   return traces;
@@ -64,7 +72,7 @@ export async function executeAgentTools(
 export function buildAgentSystem(agent: AgentDef, flags: { codeMode: boolean; vault: boolean; agentMode: boolean }) {
   const toolHelp = [
     "Tools: emit [[tool:name]] {\"key\":\"value\"} then wait for results.",
-    "web_search, http_fetch, file_read, code_run",
+    "web_search, http_fetch, file_read, code_run, doc_edit. For document edits wrap the full document in [[doc]]...[[/doc]].",
   ].join(" ");
   return [agent.systemPrompt, toolHelp, flags.agentMode ? "Agent mode on." : "", flags.vault ? "Vault attached." : "", flags.codeMode ? "Use fenced code blocks." : ""]
     .filter(Boolean)

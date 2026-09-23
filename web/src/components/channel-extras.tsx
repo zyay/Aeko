@@ -1,32 +1,68 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AGENT_ROSTER, setRoomAgentId } from "@/lib/agents";
-import { loadVault, saveVault } from "@/lib/vault-store";
+import type { Line } from "@/components/aeko-app-types";
+import { encodeCanvas, encodeNote, encodePatch } from "@/lib/chat-history";
 
-type Note = { time: string; text: string };
 type Patch = { id: string; title: string; status: "open" | "review" | "merged" };
 type Audit = { id: string; actor: string; action: string; createdAt: number };
 
-export function ChannelExtras({ roomId }: { roomId: string }) {
+function parseNote(text: string) {
+  const [time, ...rest] = text.split("\n");
+  return { time: time || "", text: rest.join("\n") };
+}
+
+function parsePatch(text: string): Patch | null {
+  const [id, title, status] = text.split("\t");
+  if (!id || !title) return null;
+  const next = status === "review" || status === "merged" ? status : "open";
+  return { id, title, status: next };
+}
+
+export function ChannelExtras({
+  roomId,
+  messages,
+  onShare,
+}: {
+  roomId: string;
+  messages: Line[];
+  onShare: (plaintext: string) => void;
+}) {
   const [tab, setTab] = useState<"canvas" | "media" | "project" | "audit">("canvas");
-  const [canvas, setCanvas] = useState("");
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [draft, setDraft] = useState("");
   const [time, setTime] = useState("00:12");
   const [note, setNote] = useState("");
-  const [patches, setPatches] = useState<Patch[]>([]);
   const [patchTitle, setPatchTitle] = useState("");
   const [audit, setAudit] = useState<Audit[]>([]);
 
+  const canvas = useMemo(() => {
+    const rows = messages.filter((m) => m.record === "canvas");
+    return rows.length ? rows[rows.length - 1]!.text : "";
+  }, [messages]);
+
+  const notes = useMemo(() => messages.filter((m) => m.record === "note").map((m) => parseNote(m.text)), [messages]);
+
+  const patches = useMemo(() => {
+    const map = new Map<string, Patch>();
+    for (const m of messages) {
+      if (m.record !== "patch") continue;
+      const patch = parsePatch(m.text);
+      if (patch) map.set(patch.id, patch);
+    }
+    return [...map.values()];
+  }, [messages]);
+
   useEffect(() => {
-    void loadVault(roomId).then((v) => setCanvas(v?.text ?? ""));
-    setNotes(read<Note>(`aeko-media:${roomId}`));
-    setPatches(read<Patch>(`aeko-patches:${roomId}`));
+    setDraft(canvas);
+  }, [canvas]);
+
+  useEffect(() => {
     void fetch(`/api/rooms/${roomId}/audit`)
       .then((r) => r.json())
       .then((j: { audit?: Audit[] }) => setAudit(j.audit ?? []))
       .catch(() => setAudit([]));
-  }, [roomId]);
+  }, [roomId, messages.length]);
 
   return (
     <section className="channel-extras">
@@ -41,28 +77,33 @@ export function ChannelExtras({ roomId }: { roomId: string }) {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            void saveVault(roomId, "canvas", canvas);
+            onShare(encodeCanvas(draft));
           }}
         >
-          <textarea value={canvas} onChange={(e) => setCanvas(e.target.value)} rows={6} aria-label="Canvas" placeholder="Shared notes for this channel" />
-          <button type="submit" className="head-chip">Save canvas</button>
+          <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={6} aria-label="Canvas" placeholder="Shared notes for this channel" />
+          <button type="submit" className="head-chip">
+            Save canvas
+          </button>
         </form>
       )}
       {tab === "media" && (
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            const next = [{ time, text: note }, ...notes];
-            setNotes(next);
-            write(`aeko-media:${roomId}`, next);
+            if (!note.trim()) return;
+            onShare(encodeNote(time, note.trim()));
             setNote("");
           }}
         >
           <input value={time} onChange={(e) => setTime(e.target.value)} aria-label="Timestamp" />
           <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Comment at this time" aria-label="Media note" />
-          <button type="submit" className="head-chip">Add note</button>
+          <button type="submit" className="head-chip">
+            Add note
+          </button>
           {notes.map((n, i) => (
-            <p key={i}>{n.time} · {n.text}</p>
+            <p key={`${n.time}-${i}`}>
+              {n.time} · {n.text}
+            </p>
           ))}
         </form>
       )}
@@ -70,27 +111,23 @@ export function ChannelExtras({ roomId }: { roomId: string }) {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            const next = [{ id: String(Date.now()), title: patchTitle, status: "open" as const }, ...patches];
-            setPatches(next);
-            write(`aeko-patches:${roomId}`, next);
+            if (!patchTitle.trim()) return;
+            onShare(encodePatch(crypto.randomUUID(), patchTitle.trim(), "open"));
             setPatchTitle("");
           }}
         >
           <input value={patchTitle} onChange={(e) => setPatchTitle(e.target.value)} placeholder="Patch title" aria-label="Patch title" />
-          <button type="submit" className="head-chip">Add patch</button>
+          <button type="submit" className="head-chip">
+            Add patch
+          </button>
           {patches.map((p) => (
             <p key={p.id}>
               {p.title} · {p.status}
               <button
                 type="button"
                 onClick={() => {
-                  const next: Patch[] = patches.map((x) =>
-                    x.id === p.id
-                      ? { ...x, status: x.status === "open" ? "review" : x.status === "review" ? "merged" : "open" }
-                      : x,
-                  );
-                  setPatches(next);
-                  write(`aeko-patches:${roomId}`, next);
+                  const status = p.status === "open" ? "review" : p.status === "review" ? "merged" : "open";
+                  onShare(encodePatch(p.id, p.title, status));
                 }}
               >
                 Advance
@@ -118,16 +155,4 @@ export function ChannelExtras({ roomId }: { roomId: string }) {
       )}
     </section>
   );
-}
-
-function read<T>(key: string): T[] {
-  try {
-    return JSON.parse(localStorage.getItem(key) || "[]") as T[];
-  } catch {
-    return [];
-  }
-}
-
-function write(key: string, value: unknown) {
-  localStorage.setItem(key, JSON.stringify(value));
 }
