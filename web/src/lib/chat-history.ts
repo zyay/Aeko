@@ -15,6 +15,25 @@ export function parseAssistantPayload(plaintext: string): { text: string; agentI
   return { text: plaintext, agentId: "aeko" };
 }
 
+export function encodeCanvas(text: string) {
+  return `[[canvas]]${text}`;
+}
+
+export function encodeNote(time: string, text: string) {
+  return `[[note]]${time}\n${text}`;
+}
+
+export function encodePatch(id: string, title: string, status: "open" | "review" | "merged") {
+  return `[[patch]]${id}\t${title}\t${status}`;
+}
+
+function recordKind(plaintext: string): Line["record"] | undefined {
+  if (plaintext.startsWith("[[canvas]]")) return "canvas";
+  if (plaintext.startsWith("[[note]]")) return "note";
+  if (plaintext.startsWith("[[patch]]")) return "patch";
+  return undefined;
+}
+
 export function decryptLine(
   id: string,
   from: string,
@@ -23,6 +42,11 @@ export function decryptLine(
   at?: number,
   parentId?: string | null,
 ): Line {
+  const record = recordKind(plaintext);
+  if (record) {
+    const text = plaintext.replace(/^\[\[(canvas|note|patch)\]\]/, "");
+    return { id, role: "system", text, at, author: from, parentId, record };
+  }
   if (plaintext.startsWith(AEKO_PREFIX) || AGENT_PREFIX_RE.test(plaintext)) {
     const parsed = parseAssistantPayload(plaintext);
     return { id, role: "aeko", text: parsed.text, at, agentId: parsed.agentId, parentId };
@@ -33,7 +57,7 @@ export function decryptLine(
 
 export function buildChatHistory(lines: Line[], system: string, extraContext: string, maxTurns = 20): ChatMessage[] {
   const out: ChatMessage[] = [{ role: "system", content: system }];
-  const convo = lines.filter((l) => l.role === "user" || l.role === "aeko" || l.role === "member").slice(-maxTurns);
+  const convo = lines.filter((l) => !l.record && (l.role === "user" || l.role === "aeko" || l.role === "member")).slice(-maxTurns);
   for (const line of convo) {
     if (line.role === "aeko") {
       const name = getAgent(line.agentId ?? "aeko").name;

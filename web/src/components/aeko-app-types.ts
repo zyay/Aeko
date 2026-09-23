@@ -6,6 +6,7 @@ export type Line = {
   author?: string;
   agentId?: string;
   parentId?: string | null;
+  record?: "canvas" | "note" | "patch";
   meta?: { ms?: number; tools?: string[] };
 };
 export type Room = {

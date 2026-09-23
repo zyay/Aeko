@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AGENT_ROSTER } from "@/lib/agents";
-import { listWorkflows, setTriage, toggleWorkflow, triageMap, type Triage, type Workflow } from "@/lib/work-store";
+import { setTriage, triageMap, type Triage } from "@/lib/work-store";
 import type { Room } from "@/components/aeko-app-types";
 
 const TABS = ["Home", "Stream", "Agents", "Workflows"] as const;
@@ -17,11 +17,14 @@ export function WorkHub({
 }) {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Home");
   const [triage, setMap] = useState<Record<string, Triage>>({});
-  const [flows, setFlows] = useState<Workflow[]>([]);
+  const [flows, setFlows] = useState<{ id: string; name: string; enabled: boolean; yaml: string }[]>([]);
 
   useEffect(() => {
     setMap(triageMap());
-    setFlows(listWorkflows());
+    void fetch("/api/workflows")
+      .then((r) => r.json())
+      .then((j: { workflows?: { id: string; name: string; enabled: boolean; yaml: string }[] }) => setFlows(j.workflows ?? []))
+      .catch(() => setFlows([]));
   }, []);
 
   const waiting = rooms.filter((r) => (triage[r.id] ?? "open") === "waiting" || (triage[r.id] ?? "open") === "open");
@@ -104,17 +107,9 @@ export function WorkHub({
             <div key={f.id} className="work-row static">
               <div>
                 <strong>{f.name}</strong>
-                <div className="work-muted">
-                  {f.agentId} · {f.trigger}
-                </div>
+                <div className="work-muted">{f.yaml.match(/^agent:\s*(\S+)/m)?.[1] ?? "aeko"} · message</div>
               </div>
-              <button
-                type="button"
-                className={f.enabled ? "head-chip on" : "head-chip"}
-                onClick={() => setFlows(toggleWorkflow(f.id))}
-              >
-                {f.enabled ? "On" : "Off"}
-              </button>
+              <span className={f.enabled ? "head-chip on" : "head-chip"}>{f.enabled ? "On" : "Off"}</span>
             </div>
           ))}
         </div>
