@@ -99,7 +99,7 @@ dependencies {
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.github.mwiede:jsch:0.2.21")
+    implementation("com.github.mwiede:jsch:2.28.7")
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
