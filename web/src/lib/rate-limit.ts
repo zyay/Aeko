@@ -32,9 +32,17 @@ function memoryLimit(key: string, limit: number, windowMs: number) {
   return true;
 }
 
+function envValue(...names: string[]) {
+  for (const name of names) {
+    const value = process.env[name]?.replace(/\\r\\n/g, "").replace(/[\r\n"]/g, "").trim();
+    if (value) return value;
+  }
+  return "";
+}
+
 async function redisLimit(key: string, limit: number, windowMs: number) {
-  const url = process.env.UPSTASH_REDIS_REST_URL?.replace(/[\r\n]/g, "").trim();
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.replace(/[\r\n]/g, "").trim();
+  const url = envValue("UPSTASH_REDIS_REST_URL", "KV_REST_API_URL");
+  const token = envValue("UPSTASH_REDIS_REST_TOKEN", "KV_REST_API_TOKEN");
   if (!url || !token) return null;
   const slot = Math.floor(Date.now() / windowMs);
   const redisKey = `aeko:rl:${key}:${slot}`;
