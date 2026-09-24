@@ -1,6 +1,8 @@
 # Aeko web
 
-Next.js App Router. Auth.js (GitHub + Google). Ciphertext rooms. Health: `GET /api/health` must be `"db":"postgres"` in production.
+Next.js workspace. GitHub and Google sign-in. Room messages are ciphertext.
+
+Waitlist: [getaeko.com](https://www.getaeko.com) · [hello@getaeko.com](mailto:hello@getaeko.com)
 
 ```bash
 npm install --legacy-peer-deps
@@ -8,4 +10,4 @@ npm run check-crypto
 npm run dev
 ```
 
-Root Directory on Vercel: `web`. Neon `DATABASE_URL`, OAuth callbacks, Vercel GitHub app: see repo README.
+The Vercel root is this directory. See the [repository README](../README.md) for production environment names.
