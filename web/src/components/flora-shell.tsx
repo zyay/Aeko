@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { MoonIcon, SunIcon } from "@primer/octicons-react";
 import { Icon, Icons } from "@/components/icons";
+import { Mascot } from "@/components/mascot";
 import { signOutNow } from "@/lib/sign-out";
 
 export type FloraTab = "Home" | "Stream" | "Agents" | "Skills" | "Workflows";
@@ -111,9 +112,7 @@ export function FloraShell({
       <div className="flora-stage">{children}</div>
       <header className="flora-top">
         <button type="button" className="flora-brand" onClick={() => onActive("Home")}>
-          <span className="flora-mark" aria-hidden>
-            <i /><i /><i /><i />
-          </span>
+          <Mascot size={18} />
           <span className="flora-title">{title}</span>
           <span className="flora-caret">▾</span>
         </button>

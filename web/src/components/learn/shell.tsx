@@ -17,6 +17,7 @@ import {
   ZapIcon,
 } from "@primer/octicons-react";
 import { Icon } from "@/components/icons";
+import { Mascot } from "@/components/mascot";
 import { FloraFrame, useFloraTheme } from "@/components/flora-shell";
 
 const SIDEBAR: { href: string; label: string; icon: typeof HomeIcon }[] = [
@@ -51,9 +52,7 @@ export function LearnShell({
       <div className="flora-stage" />
       <header className="flora-top">
         <Link href="/learn/plan" className="flora-brand">
-          <span className="flora-mark" aria-hidden>
-            <i /><i /><i /><i />
-          </span>
+          <Mascot size={18} />
           <span className="flora-title">Learn</span>
         </Link>
         <button type="button" className="flora-icon-corner" aria-label={theme === "dark" ? "Light theme" : "Dark theme"} title={theme === "dark" ? "Light theme" : "Dark theme"} onClick={() => setMode(theme === "dark" ? "light" : "dark")}>

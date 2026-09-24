@@ -4,14 +4,11 @@
     <circle cx="1.2" cy="1.2" r="1.05" fill="#222"/>
   </pattern>
   <rect width="1280" height="640" fill="url(#dots)"/>
-  <g fill="#f5f5f5" transform="translate(604 168)">
-    <rect width="16" height="16"/>
-    <rect x="22" width="16" height="16"/>
-    <rect y="22" width="16" height="16"/>
-    <rect x="22" y="22" width="16" height="16"/>
+  <g transform="translate(569.6 96) scale(2.2)">
+    <path fill="#f5f5f5" fill-rule="nonzero" d="M 64 18.001 C 64 8.059 55.941 0 45.999 0 C 37.246 0 26.753 0 18 0 C 8.059 0 0 8.059 0 18 C 0 36.93 0 64 0 64 C 0 64 27.069 64 45.999 64 C 55.94 64 64 55.94 64 45.999 C 64 37.246 64 26.753 64 18.001 Z M 25 17 C 25 14.791 26.791 13 29 13 C 30.881 13 33.119 13 35 13 C 37.209 13 39 14.791 39 17 C 39 19.977 39 24.023 39 27 C 39 29.209 37.209 31 35 31 C 33.119 31 30.881 31 29 31 C 26.791 31 25 29.209 25 27 C 25 24.023 25 19.977 25 17 Z M 42 17 C 42 14.791 43.791 13 46 13 C 47.287 13 48.713 13 50 13 C 52.209 13 54 14.791 54 17 C 54 19.166 54 21.834 54 24 C 54 26.209 52.209 28 50 28 C 48.713 28 47.287 28 46 28 C 43.791 28 42 26.209 42 24 C 42 21.834 42 19.166 42 17 Z"/>
   </g>
-  <text x="640" y="292" text-anchor="middle" fill="#f5f5f5" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="84" font-weight="600" letter-spacing="-3">Aeko</text>
-  <text x="640" y="352" text-anchor="middle" fill="#8e8e93" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="24">Humans and agents. One room. Zero eavesdroppers.</text>
-  <rect x="508" y="404" width="264" height="48" rx="24" fill="none" stroke="#f5f5f5" stroke-width="1.5"/>
-  <text x="640" y="434" text-anchor="middle" fill="#f5f5f5" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="16" font-weight="600">www.getaeko.com</text>
+  <text x="640" y="312" text-anchor="middle" fill="#f5f5f5" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="84" font-weight="600" letter-spacing="-3">Aeko</text>
+  <text x="640" y="368" text-anchor="middle" fill="#8e8e93" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="24">Humans and agents. One room. Zero eavesdroppers.</text>
+  <rect x="508" y="412" width="264" height="48" rx="24" fill="none" stroke="#f5f5f5" stroke-width="1.5"/>
+  <text x="640" y="442" text-anchor="middle" fill="#f5f5f5" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="16" font-weight="600">www.getaeko.com</text>
 </svg>
