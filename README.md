@@ -1,60 +1,71 @@
-# Aeko
+<p align="center">
+  <img src="docs/header.svg" alt="Aeko. Humans and agents. One room. Zero eavesdroppers." width="100%">
+</p>
 
-Highlight-style agent workspace: colorful bots, inbox of tasks, encrypted threads. Your OpenAI-compatible brain. Android + web.
+<p align="center">
+  <a href="https://www.getaeko.com"><strong>Join the waitlist</strong></a>
+  &nbsp;&nbsp;·&nbsp;&nbsp;
+  <a href="mailto:hello@getaeko.com">hello@getaeko.com</a>
+  &nbsp;&nbsp;·&nbsp;&nbsp;
+  <a href="https://aeko.vercel.app">Open the workspace</a>
+</p>
 
-[![CI](https://github.com/zyay/Lyan/actions/workflows/ci.yml/badge.svg)](https://github.com/zyay/Lyan/actions/workflows/ci.yml)
+<p align="center">
+  <a href="https://github.com/zyay/Aeko/actions/workflows/ci.yml"><img src="https://github.com/zyay/Aeko/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  &nbsp;
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-111111" alt="MIT"></a>
+</p>
 
-Live: [https://aeko.vercel.app](https://aeko.vercel.app) · GitHub repo stays **`zyay/Lyan`**. Product name **Aeko**.
+A shared room for people and agents. Messages are encrypted on the device. The server stores ciphertext. You bring the model.
 
-## Install (Android)
+## Waitlist
 
-1. Download [Aeko.apk](https://github.com/zyay/Lyan/releases/tag/latest)
-2. Allow unknown sources
-3. Open the APK
+The public door is [getaeko.com](https://www.getaeko.com). Leave an address there and you hear when it opens.
 
-## Production checklist (dashboard — CLI cannot finish these)
+Questions, press, and security reports go to [hello@getaeko.com](mailto:hello@getaeko.com).
 
-Do these once. Until Neon is attached, `/api/health` reports `"db":"file"` and rooms vanish on Vercel.
+## The room
 
-1. **Neon** — create a project, copy the pooled URL, set `DATABASE_URL` on Vercel project **aeko**. Production health must show `"db":"postgres"` and `"durable":true`.
-2. **GitHub OAuth** app callbacks:
-   - `https://aeko.vercel.app/api/auth/callback/github`
-3. **Google OAuth** callbacks:
-   - `https://aeko.vercel.app/api/auth/callback/google`
-4. Install **[Vercel for GitHub](https://github.com/apps/vercel)** on `zyay/Lyan`, then `vercel git connect`.
-5. Optional Web Push: `AEKO_VAPID_PUBLIC` / `AEKO_VAPID_PRIVATE` (never put LLM keys here).
-
-Environment:
-
-| Name | Value |
+| | |
 | --- | --- |
-| `AUTH_SECRET` | random 32+ chars |
-| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | GitHub OAuth app |
-| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Google OAuth |
+| People and agents | Same channel. Mention a bot, or write your own. |
+| Encryption | ECDH P-256 and AES-GCM on the device. Keys are not logged. |
+| Model | Your key, on an OpenAI-compatible endpoint, or a server on your machine. |
+| Clients | Web workspace and an Android app. |
+
+A cloud model call is not end-to-end encrypted. The browser sends that prompt to the provider with your key. A local base URL stays on the machine.
+
+## Run it
+
+Web:
+
+```bash
+cd web
+npm install --legacy-peer-deps
+npm run check-crypto
+npm run dev
+```
+
+Android sign-in uses a one-time claim code that expires in 60 seconds and is deleted on first use. The link is `aeko://auth?code=…`.
+
+Production health is `GET /api/health`. A durable deploy reports `"db":"postgres"`.
+
+| Name | What it is |
+| --- | --- |
+| `AUTH_SECRET` | Random 32+ characters |
 | `AUTH_URL` | `https://aeko.vercel.app` |
-| `AUTH_TRUST_HOST` | `true` |
-| `DATABASE_URL` or `POSTGRES_URL` | Neon |
-| `AEKO_LLM_PROXY` | `0` (keep off) |
-| `AEKO_VAPID_PUBLIC` / `AEKO_VAPID_PRIVATE` | Web Push |
+| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | GitHub sign-in |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Google sign-in |
+| `DATABASE_URL` | Neon, or another Postgres |
+| `AEKO_LLM_PROXY` | Leave `0`. Room plaintext is not forwarded |
 
-Health: `GET /api/health` → `{ ok, db, durable, auth }`. If production is still `"file"`, rooms are not durable.
+OAuth callbacks:
 
-Optional GitHub secrets for deploy: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. Signing: `LYAN_KEYSTORE_*`.
+- `https://aeko.vercel.app/api/auth/callback/github`
+- `https://aeko.vercel.app/api/auth/callback/google`
 
-Local: `cd web && npm install --legacy-peer-deps && npm run check-crypto && npm run dev`
+The Vercel project root is `web/`.
 
-Wrap crypto lock: ECDH P-256, 32 raw shared bytes, AES-256-GCM (`web/scripts/check-crypto.mjs`). Android uses the same in `CollabClient`.
+## License
 
-Android sign-in uses a one-time `/api/android/claim` code on `aeko://auth?code=…` (legacy `lyan://` still works). Bearer tokens are not put in the query string.
-
-## Libraries.dev + mascot
-
-Web: `border-beam`, `thinking-orbs`, `liquid-gooey`, `img-fx` + `three`, `voice-beam`. Mascot: `@bible-strong/avatar-react` Strobi JSON (**AGPL**, web only). Android uses Compose blobs.
-
-## Brains
-
-API key + URL, own `/v1` server, or GGUF download on Android. Keys never go to Vercel unless you set `AEKO_LLM_PROXY=1`. GGUF inference uses llama.cpp JNI when a native lib is present, otherwise **llama-server** on `127.0.0.1:8080/v1` — never a fake GGUF reply.
-
-## Tasks
-
-Sign in, create a bot/task, invite by email. AES-GCM + ECDH P-256 JWK on both web and Android. Notifications have no message body (`New activity in {task}`).
+[MIT](LICENSE). Copyright 2026 zyay.

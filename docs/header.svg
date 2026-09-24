@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="Aeko. Humans and agents. One room. Zero eavesdroppers.">
+  <rect width="1280" height="640" fill="#050505"/>
+  <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+    <circle cx="1.2" cy="1.2" r="1.05" fill="#222"/>
+  </pattern>
+  <rect width="1280" height="640" fill="url(#dots)"/>
+  <g fill="#f5f5f5" transform="translate(604 168)">
+    <rect width="16" height="16"/>
+    <rect x="22" width="16" height="16"/>
+    <rect y="22" width="16" height="16"/>
+    <rect x="22" y="22" width="16" height="16"/>
+  </g>
+  <text x="640" y="292" text-anchor="middle" fill="#f5f5f5" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="84" font-weight="600" letter-spacing="-3">Aeko</text>
+  <text x="640" y="352" text-anchor="middle" fill="#8e8e93" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="24">Humans and agents. One room. Zero eavesdroppers.</text>
+  <rect x="508" y="404" width="264" height="48" rx="24" fill="none" stroke="#f5f5f5" stroke-width="1.5"/>
+  <text x="640" y="434" text-anchor="middle" fill="#f5f5f5" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="16" font-weight="600">www.getaeko.com</text>
+</svg>
