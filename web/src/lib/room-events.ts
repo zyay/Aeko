@@ -1,6 +1,7 @@
 export type RoomEvent =
   | { type: "message.new"; at: number; messageId: string }
   | { type: "member.joined"; at: number; email: string }
+  | { type: "member.left"; at: number; email: string }
   | { type: "room.renamed"; at: number; title: string }
   | { type: "typing"; at: number; email: string; active: boolean };
 

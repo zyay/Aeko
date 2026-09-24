@@ -2,11 +2,19 @@
 
 import type { FormEvent } from "react";
 import { UiBanner } from "@/components/ui-kit";
+import { Mascot } from "@/components/mascot";
 import type { Room, RoomPreview } from "@/components/aeko-app-types";
 import type { AgentDef } from "@/lib/agents";
 import type { FloraTab } from "@/components/flora-shell";
 import { WorkHub } from "@/components/work-hub";
 import { IconAttach, IconGlobe, IconSend, IconSparkle } from "@/components/ui-primitives";
+
+const STARTERS: { title: string; topic: string; kind: "channel" | "project" | "canvas" }[] = [
+  { title: "Brief", topic: "Decisions, owners, and open questions", kind: "channel" },
+  { title: "Research", topic: "Sources, pages, and what changed", kind: "project" },
+  { title: "Canvas", topic: "Shared notes that stay in the room", kind: "canvas" },
+  { title: "Build", topic: "Code, reviews, and patches", kind: "channel" },
+];
 
 export function DeskView({
   activeAgent,
@@ -30,6 +38,7 @@ export function DeskView({
   onWebMode,
   onAgentMode,
   onFile,
+  onCreateChannel,
   tab,
   onTab,
   onAgentSelect,
@@ -56,6 +65,7 @@ export function DeskView({
   onWebMode: () => void;
   onAgentMode: () => void;
   onFile: (file: File) => void;
+  onCreateChannel: (input: { title: string; topic: string; kind: "channel" | "dm" | "project" | "canvas"; visibility: "open" | "private" }) => void;
   tab: FloraTab;
   onTab: (tab: FloraTab) => void;
   onAgentSelect: (id: string) => void;
@@ -77,18 +87,15 @@ export function DeskView({
       {status && <UiBanner>{status}</UiBanner>}
 
       {tab === "Home" ? (
-        <>
-          <p className="flora-hint">
-            <b>Double-click</b> anywhere to open a channel, or start with…
-          </p>
-          <div className="flora-pills">
-            <button type="button" className="flora-pill" onClick={onCreateTask}>New channel</button>
-            <button type="button" className="flora-pill" onClick={() => { if (!webMode) onWebMode(); onDeskDraft(deskDraft || "Search the web for "); }}>Search the web</button>
-            <button type="button" className="flora-pill" onClick={() => onTab("Agents")}>Ask an agent</button>
-            <button type="button" className="flora-pill" onClick={() => onRunChip("Make a checklist for this workspace")}>Make a checklist</button>
-            <button type="button" className="flora-pill" onClick={() => onTab("Workflows")}>Workflows</button>
-            <button type="button" className="flora-pill" onClick={onPalette}>…</button>
-          </div>
+        <div className="desk-board">
+          <header className="desk-lead">
+            <Mascot size={36} />
+            <div>
+              <p className="desk-kicker">Encrypted workspace</p>
+              <h1>People and agents. One room.</h1>
+              <p>Messages stay on the device. Mention a bot, or open a channel and write the note there.</p>
+            </div>
+          </header>
           <DeskComposer
             deskDraft={deskDraft}
             busy={busy}
@@ -100,18 +107,42 @@ export function DeskView({
             onAgentMode={onAgentMode}
             onFile={onFile}
           />
-          {filteredRooms.length > 0 && (
-            <div className="flora-blocks">
+          <div className="desk-grid">
+            <div className="desk-rooms">
               {filteredRooms.map((r) => (
                 <button key={r.id} type="button" className="flora-block" onClick={() => onOpenRoom(r.id)}>
                   <strong>{r.title}</strong>
-                  <span>{previews[r.id]?.text || r.topic || "No messages yet"}</span>
+                  <span>{previews[r.id]?.text || r.topic || "Quiet. The first note starts the thread."}</span>
                   <em>{r.kind ?? "channel"} · {formatTime(previews[r.id]?.lastAt ?? r.lastAt ?? 0)}</em>
                 </button>
               ))}
+              {STARTERS.filter((starter) => !filteredRooms.some((room) => room.title === starter.title)).map((starter) => (
+                <button
+                  key={starter.title}
+                  type="button"
+                  className="flora-block ghost"
+                  onClick={() => onCreateChannel({ title: starter.title, topic: starter.topic, kind: starter.kind, visibility: "private" })}
+                >
+                  <strong>{starter.title}</strong>
+                  <span>{starter.topic}</span>
+                  <em>Start this room</em>
+                </button>
+              ))}
             </div>
-          )}
-        </>
+            <aside className="desk-aside">
+              <p className="desk-kicker">In the room</p>
+              <ul>
+                <li><b>@Hands</b> searches, opens a page, then answers from what it read.</li>
+                <li><b>Canvas</b> is a shared note. An agent can rewrite it into the channel.</li>
+                <li><b>Skills</b> are read when you name them, pin them, or type /.</li>
+                <li><b>Keys</b> never leave this browser. The server stores ciphertext.</li>
+              </ul>
+              <button type="button" className="flora-pill" onClick={onCreateTask}>Blank channel</button>
+              <button type="button" className="flora-pill" onClick={() => onRunChip("@Hands what should we decide in this workspace?")}>Ask @Hands</button>
+              <button type="button" className="flora-pill" onClick={onPalette}>Search commands</button>
+            </aside>
+          </div>
+        </div>
       ) : (
         <div className="flora-sheet">
           <WorkHub
@@ -179,7 +210,7 @@ export function DeskComposer({
         <input
           value={deskDraft}
           onChange={(e) => onDeskDraft(e.target.value)}
-          placeholder="Ask Aeko anything…"
+          placeholder="Ask @Hands, or write the first note…"
           aria-label="Ask anything"
         />
         <button className="sendbtn" type="submit" disabled={!deskDraft.trim() || busy} aria-label="Send">

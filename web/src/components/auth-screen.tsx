@@ -1,4 +1,3 @@
-import { signIn } from "@/auth";
 import { AuthGateShell } from "@/components/auth-gate-shell";
 import { Mascot } from "@/components/mascot";
 import { AppFooter } from "@/components/ui-primitives";
@@ -6,42 +5,40 @@ import { GoogleMark, Icon, Icons } from "@/components/icons";
 import { LockIcon } from "@primer/octicons-react";
 
 export function AuthScreen({
-  after,
-  error,
+  problem,
+  githubReady,
+  googleReady,
+  github,
+  google,
 }: {
-  after: string;
-  error?: string;
+  problem?: string;
+  githubReady: boolean;
+  googleReady: boolean;
+  github: () => Promise<void>;
+  google: () => Promise<void>;
 }) {
   return (
     <AuthGateShell>
       <Mascot size={72} className="flora-mark flora-mark-lg" label="Aeko" />
       <p className="auth-tag">Intelligence without surveillance.</p>
       <h1>Sign in</h1>
-      <p>Pick a provider. Your keys never leave your device — we only verify who you are.</p>
-      {error && <p className="flora-error">{signInProblem(error)}</p>}
+      <p>Continue with GitHub. Your keys never leave your device — we only verify who you are.</p>
+      {problem && <p className="flora-error">{problem}</p>}
       <div className="auth-forms">
-        <form
-          action={async () => {
-            "use server";
-            await signIn("github", { redirectTo: after });
-          }}
-        >
-          <button type="submit">
+        <form action={github}>
+          <button type="submit" disabled={!githubReady}>
             <Icon icon={Icons.brand} size={18} aria-hidden />
             Continue with GitHub
           </button>
         </form>
-        <form
-          action={async () => {
-            "use server";
-            await signIn("google", { redirectTo: after });
-          }}
-        >
-          <button className="alt" type="submit">
-            <GoogleMark size={18} />
-            Continue with Google
-          </button>
-        </form>
+        {googleReady && (
+          <form action={google}>
+            <button className="alt" type="submit">
+              <GoogleMark size={18} />
+              Continue with Google
+            </button>
+          </form>
+        )}
       </div>
       <div className="trust-row" aria-hidden>
         <span>Device</span>
@@ -55,11 +52,4 @@ export function AuthScreen({
       <AppFooter />
     </AuthGateShell>
   );
-}
-
-function signInProblem(error?: string) {
-  if (error === "Configuration") return "Sign-in is not configured on this server.";
-  if (error === "AccessDenied") return "Access was denied.";
-  if (error === "OAuthAccountNotLinked") return "This email is already linked to the other provider.";
-  return "GitHub or Google could not finish sign-in. Try again.";
 }

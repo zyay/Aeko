@@ -57,6 +57,19 @@ export function skillQuery(text: string): string | null {
   return m ? m[1]!.trim().toLowerCase() : null;
 }
 
+export function formatSkillList(roomId?: string | null) {
+  const skills = listInstalledSkills();
+  if (!skills.length) return "skill_list:\nNo skills installed. Add one on the desk Skills tab.";
+  const pinned = new Set(roomId ? roomSkillIds(roomId) : []);
+  return (
+    "skill_list:\n" +
+    skills
+      .slice(0, 40)
+      .map((skill) => `- ${skill.name}${pinned.has(skill.id) ? " (pinned to this channel)" : ""}: ${skill.description || "installed skill"}`)
+      .join("\n")
+  ).slice(0, 4000);
+}
+
 export function formatSkillPack(skills: SkillEntry[]) {
   if (!skills.length) return "";
   return skills

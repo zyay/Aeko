@@ -26,22 +26,26 @@ const emptyDraft = (): SetupDraft => ({
 
 export function SetupForm({
   after,
-  error,
+  problem,
+  githubReady,
+  googleReady,
   github,
   google,
 }: {
   after: string;
-  error?: string;
+  problem?: string;
+  githubReady: boolean;
+  googleReady: boolean;
   github: () => Promise<void>;
   google: () => Promise<void>;
 }) {
-  const [step, setStep] = useState(error ? 3 : 0);
+  const [step, setStep] = useState(problem ? 3 : 0);
   const [draft, setDraft] = useState<SetupDraft>(emptyDraft);
   const [own, setOwn] = useState(false);
   const [botName, setBotName] = useState("");
   const [botRole, setBotRole] = useState("");
   const [botPrompt, setBotPrompt] = useState("");
-  const [botTools, setBotTools] = useState<AgentTool[]>(["web_search", "file_read", "doc_edit", "skill_read"]);
+  const [botTools, setBotTools] = useState<AgentTool[]>(["web_search", "file_read", "doc_edit", "skill_read", "app_list", "app_call"]);
   const [provider, setProvider] = useState("OpenAI");
   const providers = [...new Set(ENDPOINT_TEMPLATES.map((item) => item.provider))];
   const templates = ENDPOINT_TEMPLATES.filter((item) => item.provider === provider);
@@ -56,8 +60,8 @@ export function SetupForm({
     setBotPrompt(saved.botPrompt || saved.custom?.systemPrompt || "");
     if (saved.botTools?.length) setBotTools(saved.botTools);
     if (saved.provider) setProvider(saved.provider);
-    if (!error && typeof saved.step === "number") setStep(Math.min(Math.max(saved.step, 0), STEPS.length - 1));
-  }, [error]);
+    if (!problem && typeof saved.step === "number") setStep(Math.min(Math.max(saved.step, 0), STEPS.length - 1));
+  }, [problem]);
 
   function patch(next: Partial<SetupDraft>) {
     setDraft((current) => {
@@ -201,7 +205,7 @@ export function SetupForm({
           <>
             <h1>Create {draft.workspace.trim() || "workspace"}</h1>
             <p>GitHub or Google is only the sign-in. The bot and the key stay on this device.</p>
-            {error && <p className="flora-error">{error === "Configuration" ? "Sign-in is not configured on this server." : "GitHub or Google could not finish. Try again."}</p>}
+            {problem && <p className="flora-error">{problem}</p>}
             <ul className="setup-review">
               <li><span>Workspace</span><strong>{draft.workspace.trim() || "Untitled"}</strong></li>
               <li><span>Bot</span><strong>{botLabel}</strong></li>
@@ -209,17 +213,19 @@ export function SetupForm({
             </ul>
             <div className="auth-forms">
               <form action={github}>
-                <button type="submit">
+                <button type="submit" disabled={!githubReady}>
                   <Icon icon={Icons.brand} size={18} aria-hidden />
                   Continue with GitHub
                 </button>
               </form>
+              {googleReady && (
               <form action={google}>
                 <button className="alt" type="submit">
                   <GoogleMark size={18} />
                   Continue with Google
                 </button>
               </form>
+              )}
             </div>
           </>
         )}

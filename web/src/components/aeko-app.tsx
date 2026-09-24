@@ -106,6 +106,7 @@ export function AekoApp({
           onWebMode={() => ws.setWebMode((v) => !v)}
           onAgentMode={() => ws.setAgentMode((v) => !v)}
           onFile={(file) => void ws.attachVaultFile(file)}
+          onCreateChannel={ws.createChannel}
           tab={tab}
           onTab={setTab}
           onAgentSelect={(id) => {

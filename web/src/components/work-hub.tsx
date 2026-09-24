@@ -7,6 +7,7 @@ import type { Room, RoomPreview } from "@/components/aeko-app-types";
 import { EmptyState } from "@/components/ui-kit";
 import { CURATED_SKILLS, type SkillEntry } from "@/lib/skills-registry";
 import { installSkill, listInstalledSkills, removeSkill } from "@/lib/skills-store";
+import { ConnectionsPanel } from "@/components/connections-panel";
 
 const TABS = ["Home", "Stream", "Agents", "Skills", "Workflows"] as const;
 const STATUSES: Triage[] = ["open", "waiting", "resolved", "delegated"];
@@ -50,7 +51,7 @@ export function WorkHub({
   const [botName, setBotName] = useState("");
   const [botRole, setBotRole] = useState("");
   const [botPrompt, setBotPrompt] = useState("");
-  const [botTools, setBotTools] = useState<AgentTool[]>(["file_read", "doc_edit", "skill_read"]);
+  const [botTools, setBotTools] = useState<AgentTool[]>(["file_read", "doc_edit", "skill_read", "app_list", "app_call"]);
 
   useEffect(() => {
     setMap(triageMap());
@@ -106,6 +107,7 @@ export function WorkHub({
 
       {tab === "Stream" && (
         <div className="work-list">
+          {rooms.length === 0 && <p className="work-kicker">No channels yet. Start Brief, Research, Canvas, or Build from Home.</p>}
           {rooms.map((r) => (
             <div key={r.id} className="work-row static">
               <button type="button" onClick={() => onOpenRoom(r.id)}>
@@ -129,6 +131,8 @@ export function WorkHub({
 
       {tab === "Agents" && (
         <div className="setup-fields">
+          <p className="work-kicker">The selected bot answers in this channel. @Hands searches, opens a page, reads the note, runs code, and calls a connected app.</p>
+          <ConnectionsPanel />
           <div className="pick-grid">
             {agents.map((a) => (
               <button key={a.id} type="button" className={activeAgentId === a.id ? "pick on" : "pick"} onClick={() => onAgentSelect?.(a.id)}>
@@ -238,6 +242,7 @@ export function WorkHub({
                 .then((j: { workflows?: { id: string; name: string; enabled: boolean; yaml: string }[] }) => setFlows(j.workflows ?? []));
             }}
           />
+          {flows.length === 0 && <p className="work-kicker">No workflows yet. A saved one runs a single agent step when a message lands in its channel.</p>}
           {flows.map((f) => (
             <div key={f.id} className="work-row static">
               <div>

@@ -221,12 +221,20 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
         if (data.type === "member.joined") {
           setNotifications((n) => [{ id: String(Date.now()), text: `${data.email} joined`, at: Date.now() }, ...n].slice(0, 20));
         }
+        if (data.type === "member.left") {
+          refreshRooms();
+          if (data.email === userEmail) {
+            setRoomId(null);
+            setView("desk");
+            router.push("/");
+          }
+        }
       } catch {
         /* ignore */
       }
     };
     return () => es.close();
-  }, [roomId, localMode, refreshRooms, openRemoteRoom]);
+  }, [roomId, localMode, refreshRooms, openRemoteRoom, userEmail, router]);
 
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: "smooth" });
@@ -491,7 +499,8 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
           setMessages((m) => m.map((line) => (line.id === replyId ? { ...line, text: line.text + chunk } : line)));
         },
         onTool: (toolLine) => setMessages((m) => [...m, toolLine]),
-        toolCtx: { prompt: text, vault: source, vaultName: vault.trim() ? vaultName : "canvas" },
+        onReset: () => setMessages((m) => m.map((line) => (line.id === replyId ? { ...line, text: "" } : line))),
+        toolCtx: { prompt: text, vault: source, vaultName: vault.trim() ? vaultName : "canvas", roomId: activeRoomId },
       });
 
       const doc = full.match(/\[\[doc\]\]([\s\S]*?)\[\[\/doc\]\]/);

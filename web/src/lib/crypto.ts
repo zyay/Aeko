@@ -77,6 +77,20 @@ async function privateKey(): Promise<CryptoKey> {
   return crypto.subtle.importKey("jwk", jwk, { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]);
 }
 
+const HKDF_SALT = new TextEncoder().encode("aeko-room-wrap-v2");
+const HKDF_INFO = new TextEncoder().encode("aeko-ecdh-aes");
+
+async function aesFromShared(bits: ArrayBuffer, usage: KeyUsage[]) {
+  const base = await crypto.subtle.importKey("raw", bits, "HKDF", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "HKDF", hash: "SHA-256", salt: HKDF_SALT, info: HKDF_INFO },
+    base,
+    { name: "AES-GCM", length: 256 },
+    false,
+    usage,
+  );
+}
+
 export async function encryptMessage(roomKeyB64: string, plaintext: string) {
   const raw = Uint8Array.from(atob(roomKeyB64), (c) => c.charCodeAt(0));
   const key = await crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt"]);
@@ -106,12 +120,12 @@ export async function wrapRoomKey(roomKeyB64: string, theirPub: JsonWebKey) {
   const their = await crypto.subtle.importKey("jwk", theirPub, { name: "ECDH", namedCurve: "P-256" }, false, []);
   const mine = await privateKey();
   const bits = await crypto.subtle.deriveBits({ name: "ECDH", public: their }, mine, 256);
-  const wrapKey = await crypto.subtle.importKey("raw", bits, "AES-GCM", false, ["encrypt"]);
+  const wrapKey = await aesFromShared(bits, ["encrypt"]);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const room = Uint8Array.from(atob(roomKeyB64), (c) => c.charCodeAt(0));
   const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, wrapKey, room);
   return {
-    wrapIv: btoa(String.fromCharCode(...iv)),
+    wrapIv: `v2.${btoa(String.fromCharCode(...iv))}`,
     wrappedKey: btoa(String.fromCharCode(...new Uint8Array(ct))),
   };
 }
@@ -119,9 +133,11 @@ export async function wrapRoomKey(roomKeyB64: string, theirPub: JsonWebKey) {
 export async function unwrapRoomKey(wrappedKey: string, wrapIv: string, theirPub: JsonWebKey) {
   const their = await crypto.subtle.importKey("jwk", theirPub, { name: "ECDH", namedCurve: "P-256" }, false, []);
   const mine = await privateKey();
+  const legacy = !wrapIv.startsWith("v2.");
+  const ivText = legacy ? wrapIv : wrapIv.slice(3);
   const bits = await crypto.subtle.deriveBits({ name: "ECDH", public: their }, mine, 256);
-  const wrapKey = await crypto.subtle.importKey("raw", bits, "AES-GCM", false, ["decrypt"]);
-  const iv = Uint8Array.from(atob(wrapIv), (c) => c.charCodeAt(0));
+  const wrapKey = legacy ? await crypto.subtle.importKey("raw", bits, "AES-GCM", false, ["decrypt"]) : await aesFromShared(bits, ["decrypt"]);
+  const iv = Uint8Array.from(atob(ivText), (c) => c.charCodeAt(0));
   const ct = Uint8Array.from(atob(wrappedKey), (c) => c.charCodeAt(0));
   const room = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, wrapKey, ct);
   return btoa(String.fromCharCode(...new Uint8Array(room)));

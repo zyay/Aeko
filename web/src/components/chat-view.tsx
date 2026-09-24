@@ -5,7 +5,8 @@ import { AgentOrb } from "@/components/agent-orb";
 import { ToolTracePanel } from "@/components/activity-rail";
 import { ThinkingOrb } from "@/components/thinking-orb";
 import { Icon, Icons } from "@/components/icons";
-import { EmptyState, IconBtn } from "@/components/ui-kit";
+import { IconBtn } from "@/components/ui-kit";
+import { Mascot } from "@/components/mascot";
 import type { BrainConfig, Line } from "@/components/aeko-app-types";
 import { listAgents, mentionQuery, type AgentDef } from "@/lib/agents";
 import { listInstalledSkills, skillQuery } from "@/lib/skill-context";
@@ -21,7 +22,14 @@ import {
   MessageRow,
 } from "@/components/ui-primitives";
 
-const CHIPS = ["Summarize this", "Search the web", "Make a checklist", "Write code"];
+const CHIPS = ["@Hands research", "@Writer brief", "@Hands apps", "Write code"];
+
+const STARTS = [
+  { title: "Research", text: "@Hands search the web for what matters here, then open the best page." },
+  { title: "Brief", text: "@Writer draft a short brief for this channel. Lead with decisions." },
+  { title: "Canvas", text: "@Editor read the channel document and tighten it." },
+  { title: "Review", text: "@Reviewer look for the highest risk in what we have so far." },
+];
 
 export function ChatView({
   current,
@@ -157,11 +165,21 @@ export function ChatView({
       <div className="thread-body" ref={bodyRef}>
         <div className="thread-body-inner">
           {messages.length === 0 && (
-            <div className="empty-chat">
-              <EmptyState
-                title="No messages yet"
-                body="This channel is quiet. Send a note, mention an agent, or pin a skill and the thread starts here."
-              />
+            <div className="channel-start">
+              <div>
+                <Mascot size={40} />
+                <p className="desk-kicker">{activeAgent.name}</p>
+                <h2>{current || "This channel"}</h2>
+                <p>The thread is empty. A mention runs that bot. Notes in the canvas stay encrypted with the room.</p>
+              </div>
+              <div className="start-grid">
+                {STARTS.map((item) => (
+                  <button key={item.title} type="button" className="flora-block" onClick={() => onRunChip(item.text)}>
+                    <strong>{item.title}</strong>
+                    <span>{item.text}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {messages.filter((m) => !m.parentId && !m.record).map((m) => (
@@ -192,7 +210,7 @@ export function ChatView({
         <div className="composer-dock-inner">
           <div className="chips">
             {CHIPS.map((c) => (
-              <button key={c} type="button" className="chip" onClick={() => onRunChip(c)}>
+              <button key={c} type="button" className="chip" onClick={() => onRunChip(c === "@Hands research" ? "@Hands search the web for what matters here, then open the best page." : c === "@Writer brief" ? "@Writer draft a short brief for this channel. Lead with decisions." : c === "@Hands apps" ? "@Hands list my connected apps. If GitHub is connected, list my recent repos." : c)}>
                 {c}
               </button>
             ))}
@@ -264,7 +282,7 @@ export function ChatView({
                   onDraft(e.target.value);
                   onTyping(true);
                 }}
-                placeholder="Message the channel. @Researcher, @Writer, or / for a skill"
+                placeholder="Message the channel. @Hands, @Writer, or / for a skill"
                 rows={1}
                 aria-label="Message"
                 onKeyDown={(e) => {

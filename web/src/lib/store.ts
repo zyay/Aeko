@@ -251,6 +251,21 @@ export async function roomsSummaryFor(email: string) {
   }, false);
 }
 
+export async function removeMember(roomId: string, email: string) {
+  const who = normEmail(email);
+  if (!(await membership(roomId, who))) return false;
+  const sql = await ready();
+  if (sql) {
+    await sql`DELETE FROM aeko_members WHERE room_id = ${roomId} AND email = ${who}`;
+    return true;
+  }
+  return withFile((db) => {
+    const before = db.members.length;
+    db.members = db.members.filter((m) => !(m.roomId === roomId && m.email === who));
+    return db.members.length < before;
+  }, true);
+}
+
 export async function addMember(roomId: string, email: string, wrappedKey: string, wrapIv: string, peerPub: string) {
   const who = normEmail(email);
   const sql = await ready();
@@ -405,8 +420,9 @@ export async function consumeClaim(code: string) {
   }
   return withFile((db) => {
     const row = db.claims.find((c) => c.code === code);
-    if (!row || row.exp < now) return null;
+    if (!row) return null;
     db.claims = db.claims.filter((c) => c.code !== code);
+    if (row.exp < now) return null;
     return { email: normEmail(row.email), name: row.name, token: row.token };
   }, true);
 }

@@ -38,14 +38,12 @@ class OnDeviceEngine(
     ): String {
         val notes = mutableListOf<String>()
         if (onlineEnabled || (ssh?.connected?.value == true && wantsSsh(prompt))) {
-            var leftover = prompt
-            for (round in 0 until 5) {
+            for (round in 0 until 4) {
                 if (shouldStop()) return ""
-                val call = nextTool(leftover, notes.size, onlineEnabled) ?: break
+                val call = nextTool(prompt, notes, onlineEnabled) ?: break
                 val result = execute(call)
                 notes += result
                 onTrace(result.take(1200))
-                leftover = ""
             }
         }
         val cited = if (vault.isNotBlank()) {
@@ -56,7 +54,8 @@ class OnDeviceEngine(
         val lower = prompt.lowercase()
         val system = buildString {
             append(persona)
-            if (agentEnabled) append(" Agent mode is on.")
+            if (agentEnabled) append(" Agent mode is on. Act with tools, then answer from the observations.")
+            append(" When a search result includes an https link, the next step is to read that page before you summarize.")
             if (vault.isNotBlank()) append(" The user attached a local vault; prefer it.")
         }
         val user = buildString {
@@ -116,10 +115,11 @@ class OnDeviceEngine(
         Regex("ssh|on my pc|on the computer|remote|list /|cat /|run command", RegexOption.IGNORE_CASE)
             .containsMatchIn(prompt)
 
-    private fun nextTool(prompt: String, done: Int, online: Boolean): JSONObject? {
-        if (done >= 4) return null
+    private fun nextTool(prompt: String, notes: List<String>, online: Boolean): JSONObject? {
+        if (notes.size >= 4) return null
         val lower = prompt.lowercase()
-        if (ssh?.connected?.value == true && wantsSsh(prompt) && done == 0) {
+        val seen = notes.joinToString("\n")
+        if (ssh?.connected?.value == true && wantsSsh(prompt) && notes.none { it.startsWith("ssh_") }) {
             val path = Regex("/[\\w./-]+").find(prompt)?.value
             if (path != null && (lower.contains("read") || lower.contains("cat") || lower.contains("open file"))) {
                 return JSONObject().put("tool", "ssh_read").put("path", path)
@@ -131,8 +131,20 @@ class OnDeviceEngine(
             return JSONObject().put("tool", "ssh_exec").put("command", cmd)
         }
         if (!online) return null
-        if (done > 0) return null
-        val urlMatch = Regex("https://[^\\s]+").find(prompt)?.value
+        val searched = notes.firstOrNull { it.startsWith("web_search:") }
+        if (searched != null) {
+            val next = Regex("https://[^\\s]+").findAll(searched)
+                .map { it.value.trimEnd('.', ',', ')') }
+                .filter { OnlineTools.isPublicHttpUrl(it) && !it.contains("duckduckgo.com", true) && !seen.contains(it) }
+                .distinct()
+                .firstOrNull()
+            if (next != null && notes.count { it.startsWith("http_fetch:") } < 2) {
+                return JSONObject().put("tool", "http_fetch").put("url", next)
+            }
+            return null
+        }
+        if (notes.any { it.startsWith("http_fetch:") }) return null
+        val urlMatch = Regex("https://[^\\s]+").find(prompt)?.value?.trimEnd('.', ',', ')')
         if (urlMatch != null && OnlineTools.isPublicHttpUrl(urlMatch)) {
             return JSONObject().put("tool", "http_fetch").put("url", urlMatch)
         }

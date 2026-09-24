@@ -469,6 +469,7 @@
 }
 .flora section.flora-signin .auth-forms { margin-top: 22px; gap: 8px; }
 .flora section.flora-signin .auth-forms button { height: 46px; border-radius: 999px; }
+.flora section.flora-signin .auth-forms button:disabled { opacity: 0.4; cursor: not-allowed; }
 .flora .authcard .pick,
 .flora .meet .pick {
   width: auto;
@@ -499,13 +500,23 @@
 .setup-mode, .tool-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .setup-grid { max-height: 240px; margin-top: 12px; }
 .flora .authcard button.tool,
+.flora .meet button.tool,
 .flora .work-hub button.tool {
   width: auto; height: 32px; padding: 0 12px; border-radius: 999px;
   background: transparent; color: var(--flora-text); border: 1px solid var(--flora-line);
   font-size: 12px; font-weight: 500;
 }
 .flora .authcard button.tool.on,
+.flora .meet button.tool.on,
 .flora .work-hub button.tool.on { background: var(--flora-strong); color: var(--flora-bg); border-color: transparent; }
+.conn-panel { margin-top: 18px; }
+.conn-row { padding: 12px 0; border-top: 1px solid var(--flora-line); }
+.conn-head { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.conn-head span, .conn-row p { color: var(--flora-muted); font-size: 12px; line-height: 1.45; }
+.conn-form { display: flex; gap: 8px; align-items: center; }
+.conn-form .field { flex: 1; }
+.flora .meet button.tool:disabled,
+.flora .work-hub button.tool:disabled { opacity: 0.4; cursor: not-allowed; }
 .setup-review { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .setup-review li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--flora-line); font-size: 14px; }
 .setup-review span { color: var(--flora-muted); }
@@ -566,6 +577,89 @@
 
 .flora-center.plain { padding-left: 28px; }
 
+.desk-board {
+  width: min(1080px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 18px;
+  text-align: left;
+}
+.flora-center:has(.desk-board) {
+  justify-content: flex-start;
+  align-items: stretch;
+  height: 100%;
+  overflow: auto;
+}
+.desk-lead { display: flex; gap: 14px; align-items: flex-start; }
+.desk-lead h1 {
+  margin: 2px 0 6px;
+  font-size: 32px;
+  letter-spacing: -0.045em;
+  font-weight: 600;
+}
+.desk-kicker {
+  margin: 0 0 4px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--flora-muted);
+}
+.desk-lead p,
+.channel-start p {
+  margin: 0;
+  max-width: 52ch;
+  color: var(--flora-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.desk-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 12px;
+  width: 100%;
+}
+.desk-rooms {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+.desk-rooms .flora-block,
+.start-grid .flora-block { width: auto; }
+.flora-block.ghost { background: transparent; box-shadow: none; }
+.desk-aside {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--flora-line);
+  background: color-mix(in srgb, var(--flora-panel) 92%, transparent);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.desk-aside ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.desk-aside li { font-size: 13px; line-height: 1.45; color: var(--flora-muted); }
+.desk-aside b { color: var(--flora-text); font-weight: 600; }
+.flora .desk-board .desk-composer-wrap { width: 100%; }
+.flora .thread-body-inner { max-width: 920px; }
+.flora .channel-start {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 18px;
+  align-items: start;
+  padding: 8px 4px 28px;
+  text-align: left;
+}
+.flora .channel-start h2 {
+  margin: 4px 0 8px;
+  font-size: 28px;
+  letter-spacing: -0.04em;
+  font-weight: 600;
+}
+.start-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.flora .start-grid .flora-block { min-height: 118px; }
+
 .flora-learn {
   position: relative;
   z-index: 2;
@@ -598,5 +692,6 @@
   .flora .chat-overlay { inset: 58px 8px 56px 58px; }
   .flora-center { padding: 76px 12px 76px 64px; }
   .flora-center.plain { padding-left: 12px; }
+  .desk-grid, .flora .channel-start, .start-grid { grid-template-columns: 1fr; }
   .flora-pop { left: 62px; width: min(280px, calc(100vw - 80px)); }
 }

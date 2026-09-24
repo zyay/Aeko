@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import { rateLimit, requestIp } from "@/lib/rate-limit";
 
 const PUBLIC = new Set(["/login", "/signup", "/privacy", "/terms", "/api/health"]);
 
@@ -16,6 +17,10 @@ function isPublic(pathname: string) {
 export default auth((req) => {
   const { pathname } = req.nextUrl;
   const loggedIn = Boolean(req.auth?.user?.email);
+
+  if (req.method === "POST" && pathname.startsWith("/api/auth") && !rateLimit(`auth:${requestIp(req)}`, 5)) {
+    return NextResponse.json({ error: "Too many sign-in attempts. Wait a minute." }, { status: 429 });
+  }
 
   if (pathname === "/api/auth/signin" && req.method === "GET") {
     const login = new URL("/login", req.url);

@@ -92,10 +92,13 @@ export async function streamChat(opts: StreamOpts): Promise<{ text: string; tool
   const payload: Record<string, unknown> = {
     model: opts.model || QUALITY_MODEL,
     messages: opts.messages,
-    temperature: 0.4,
+    temperature: opts.tools?.length ? 0.2 : 0.4,
     stream: true,
   };
-  if (opts.tools?.length) payload.tools = opts.tools;
+  if (opts.tools?.length) {
+    payload.tools = opts.tools;
+    payload.tool_choice = "auto";
+  }
 
   const send = async (body: Record<string, unknown>) => {
     if (opts.useProxy) {
@@ -139,6 +142,7 @@ export async function streamChat(opts: StreamOpts): Promise<{ text: string; tool
     if (!/400|404|422|tools/i.test(message)) throw error;
     const retry = { ...payload };
     delete retry.tools;
+    delete retry.tool_choice;
     return send(retry);
   }
 }

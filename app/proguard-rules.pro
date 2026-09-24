@@ -1,4 +1,7 @@
 -keep class com.zyay.aeko.** { *; }
+-keep class javax.crypto.** { *; }
+-keep class java.security.** { *; }
+-keep class org.llamacpp.** { *; }
 -keep class okhttp3.** { *; }
 -dontwarn okhttp3.**
 -dontwarn okio.**

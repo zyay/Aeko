@@ -18,9 +18,10 @@ android {
         }
         return null
     }
-    val storePass = env("AEKO_KEYSTORE_PASSWORD", "LYAN_KEYSTORE_PASSWORD") ?: "lyan-release"
-    val alias = env("AEKO_KEY_ALIAS", "LYAN_KEY_ALIAS") ?: "lyan"
-    val keyPass = env("AEKO_KEY_PASSWORD", "LYAN_KEY_PASSWORD") ?: "lyan-release"
+    val storePass = env("AEKO_KEYSTORE_PASSWORD", "LYAN_KEYSTORE_PASSWORD")
+    val alias = env("AEKO_KEY_ALIAS", "LYAN_KEY_ALIAS")
+    val keyPass = env("AEKO_KEY_PASSWORD", "LYAN_KEY_PASSWORD")
+    val canSign = keystoreFile.exists() && !storePass.isNullOrBlank() && !alias.isNullOrBlank() && !keyPass.isNullOrBlank()
     val authUrl = env("AEKO_AUTH_URL", "LYAN_AUTH_URL") ?: "https://www.getaeko.com"
 
     defaultConfig {
@@ -34,24 +35,24 @@ android {
 
     signingConfigs {
         create("release") {
-            if (keystoreFile.exists()) {
+            if (canSign) {
                 storeFile = keystoreFile
-                storePassword = storePass
-                keyAlias = alias
-                keyPassword = keyPass
+                storePassword = storePass!!
+                keyAlias = alias!!
+                keyPassword = keyPass!!
             }
         }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = if (keystoreFile.exists()) {
+            signingConfig = if (canSign) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")

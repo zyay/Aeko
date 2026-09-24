@@ -9,6 +9,7 @@ import { Mascot } from "@/components/mascot";
 import { signOutNow } from "@/lib/sign-out";
 import { BotPick, EndpointPick } from "@/components/picks";
 import { AGENT_TOOLS, createCustomAgent, type AgentTool } from "@/lib/agents";
+import { ConnectionsPanel } from "@/components/connections-panel";
 import { WORKSPACE_NAME_KEY, WORKSPACE_PURPOSE_KEY, PINNED_AGENT_KEY } from "@/lib/setup-draft";
 
 export function BrainForm({
@@ -29,7 +30,7 @@ export function BrainForm({
   const [botName, setBotName] = useState("");
   const [botRole, setBotRole] = useState("");
   const [botPrompt, setBotPrompt] = useState("");
-  const [botTools, setBotTools] = useState<AgentTool[]>(["web_search", "file_read", "doc_edit", "skill_read"]);
+  const [botTools, setBotTools] = useState<AgentTool[]>(["web_search", "file_read", "doc_edit", "skill_read", "app_list", "app_call"]);
 
   useEffect(() => {
     setWorkspace(localStorage.getItem(WORKSPACE_NAME_KEY) || "");
@@ -133,7 +134,8 @@ export function BrainForm({
         >
           Test connection
         </button>
-        <p className="sub">Keys and message plaintext stay in this browser. The server stores ciphertext only.</p>
+        <ConnectionsPanel />
+        <p className="sub">Keys, app tokens, and message plaintext stay in this browser. The server stores ciphertext only.</p>
         <p className="tiny">{status}</p>
         <button
           className="blackpill full"

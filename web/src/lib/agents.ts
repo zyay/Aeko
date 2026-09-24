@@ -1,4 +1,4 @@
-export type AgentTool = "web_search" | "http_fetch" | "file_read" | "code_run" | "doc_edit" | "skill_read";
+export type AgentTool = "web_search" | "http_fetch" | "file_read" | "code_run" | "doc_edit" | "skill_list" | "skill_read" | "app_list" | "app_call";
 
 export type AgentDef = {
   id: string;
@@ -19,7 +19,7 @@ export const AGENT_ROSTER: AgentDef[] = [
     accent: "#111111",
     systemPrompt:
       "You are Signal Monitor, a research agent. Watch for changes, summarize sources, and surface what matters. Cite tool output when used. Be crisp and actionable.",
-    tools: ["web_search", "http_fetch", "file_read", "doc_edit", "skill_read"],
+    tools: ["web_search", "http_fetch", "file_read", "doc_edit", "skill_list", "skill_read", "app_list", "app_call"],
   },
   {
     id: "code-runner",
@@ -28,8 +28,8 @@ export const AGENT_ROSTER: AgentDef[] = [
     avatar: "/agents/b.svg",
     accent: "#111111",
     systemPrompt:
-      "You are Code Runner, an engineering agent. Write clean code, explain tradeoffs, and debug step by step. Prefer fenced code blocks.",
-    tools: ["http_fetch", "code_run", "file_read", "skill_read"],
+      "You are Code Runner, an engineering agent. Write clean code, explain tradeoffs, and debug step by step. Run a snippet before you claim it works.",
+    tools: ["web_search", "http_fetch", "code_run", "file_read", "skill_list", "skill_read"],
   },
   {
     id: "researcher",
@@ -38,7 +38,7 @@ export const AGENT_ROSTER: AgentDef[] = [
     avatar: "/agents/a.svg",
     accent: "#111111",
     systemPrompt: "You are Researcher. Combine sources, compare options, and produce structured briefs with clear recommendations.",
-    tools: ["web_search", "http_fetch", "file_read", "doc_edit", "skill_read"],
+    tools: ["web_search", "http_fetch", "file_read", "doc_edit", "skill_list", "skill_read"],
   },
   {
     id: "writer",
@@ -47,7 +47,7 @@ export const AGENT_ROSTER: AgentDef[] = [
     avatar: "/agents/aeko.svg",
     accent: "#111111",
     systemPrompt: "You are Writer. Draft polished prose, specs, and messages. Match tone to the audience.",
-    tools: ["file_read", "doc_edit", "web_search", "skill_read"],
+    tools: ["web_search", "http_fetch", "file_read", "doc_edit", "skill_list", "skill_read"],
   },
   {
     id: "aeko",
@@ -56,7 +56,17 @@ export const AGENT_ROSTER: AgentDef[] = [
     avatar: "/agents/aeko.svg",
     accent: "#111111",
     systemPrompt: "You are Aeko, a sharp personal assistant. Be concise, useful, and direct.",
-    tools: ["web_search", "http_fetch", "file_read", "code_run", "doc_edit", "skill_read"],
+    tools: ["web_search", "http_fetch", "file_read", "code_run", "doc_edit", "skill_list", "skill_read", "app_list", "app_call"],
+  },
+  {
+    id: "hands",
+    name: "Hands",
+    tagline: "Acts with tools",
+    avatar: "/agents/b.svg",
+    accent: "#111111",
+    systemPrompt:
+      "You are Hands. You work like an OpenHands agent: call a tool, read the observation, then call the next tool. Search, open the best page, read the channel document, run code, and use a connected app when the task names GitHub, Linear, Notion, or Slack. Never claim a result you did not observe.",
+    tools: ["web_search", "http_fetch", "file_read", "code_run", "doc_edit", "skill_list", "skill_read", "app_list", "app_call"],
   },
   {
     id: "planner",
@@ -65,7 +75,7 @@ export const AGENT_ROSTER: AgentDef[] = [
     avatar: "/agents/aeko.svg",
     accent: "#111111",
     systemPrompt: "You are Planner. Turn a goal into a short ordered plan with owners, risks, and the next concrete step.",
-    tools: ["file_read", "doc_edit", "skill_read"],
+    tools: ["web_search", "file_read", "doc_edit", "skill_list", "skill_read"],
   },
   {
     id: "editor",
@@ -74,7 +84,7 @@ export const AGENT_ROSTER: AgentDef[] = [
     avatar: "/agents/aeko.svg",
     accent: "#111111",
     systemPrompt: "You are Editor. Cut filler, fix structure, and return the revised text plus a short note on what changed.",
-    tools: ["file_read", "doc_edit", "skill_read"],
+    tools: ["file_read", "doc_edit", "skill_list", "skill_read"],
   },
   {
     id: "reviewer",
@@ -83,7 +93,7 @@ export const AGENT_ROSTER: AgentDef[] = [
     avatar: "/agents/b.svg",
     accent: "#111111",
     systemPrompt: "You are Reviewer. Find bugs, missing cases, and unclear decisions. Lead with the highest risk.",
-    tools: ["file_read", "code_run", "http_fetch", "skill_read"],
+    tools: ["web_search", "http_fetch", "file_read", "code_run", "skill_list", "skill_read"],
   },
   {
     id: "translator",
@@ -92,7 +102,7 @@ export const AGENT_ROSTER: AgentDef[] = [
     avatar: "/agents/a.svg",
     accent: "#111111",
     systemPrompt: "You are Translator. Translate faithfully, keep names and tone, and note anything ambiguous.",
-    tools: ["file_read", "doc_edit", "skill_read"],
+    tools: ["file_read", "doc_edit", "skill_list", "skill_read"],
   },
   {
     id: "operator",
@@ -101,7 +111,7 @@ export const AGENT_ROSTER: AgentDef[] = [
     avatar: "/agents/b.svg",
     accent: "#111111",
     systemPrompt: "You are Operator. Turn a request into the next action, the tool to use, and the result to check.",
-    tools: ["web_search", "http_fetch", "file_read", "doc_edit", "skill_read"],
+    tools: ["web_search", "http_fetch", "file_read", "code_run", "doc_edit", "skill_list", "skill_read", "app_list", "app_call"],
   },
 ];
 
@@ -114,7 +124,10 @@ export const AGENT_TOOLS: { id: AgentTool; label: string }[] = [
   { id: "file_read", label: "Files" },
   { id: "code_run", label: "Code" },
   { id: "doc_edit", label: "Documents" },
+  { id: "skill_list", label: "Skill list" },
   { id: "skill_read", label: "Skills" },
+  { id: "app_list", label: "Apps" },
+  { id: "app_call", label: "App actions" },
 ];
 
 function isAgent(value: unknown): value is AgentDef {
@@ -167,7 +180,7 @@ export function buildCustomAgent(
     avatar: "/agents/aeko.svg",
     accent: "#111111",
     systemPrompt: input.systemPrompt.trim() || `You are ${name}. Be concise and useful.`,
-    tools: input.tools.length ? input.tools : ["file_read", "doc_edit", "skill_read"],
+    tools: input.tools.length ? input.tools : ["web_search", "file_read", "doc_edit", "skill_list", "skill_read", "app_list", "app_call"],
   };
 }
 
@@ -215,6 +228,7 @@ const MENTION_ALIASES: { id: string; names: string[] }[] = [
   { id: "researcher", names: ["researcher", "research"] },
   { id: "writer", names: ["writer"] },
   { id: "aeko", names: ["aeko", "agent"] },
+  { id: "hands", names: ["hands", "open hands", "openhands"] },
   { id: "planner", names: ["planner", "plan"] },
   { id: "editor", names: ["editor", "edit"] },
   { id: "reviewer", names: ["reviewer", "review"] },

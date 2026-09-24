@@ -26,6 +26,7 @@ import java.security.spec.X509EncodedKeySpec
 import javax.crypto.Cipher
 import javax.crypto.KeyAgreement
 import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 class CollabClient(context: Context) {
@@ -66,17 +67,20 @@ class CollabClient(context: Context) {
     }
 
     fun wrap(roomKeyB64: String, theirPubJson: String): Pair<String, String> {
-        val shared = ecdh(theirPubJson)
+        val shared = hkdf(ecdh(theirPubJson))
         val iv = ByteArray(12).also { SecureRandom().nextBytes(it) }
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(shared, "AES"), GCMParameterSpec(128, iv))
-        return b64(iv) to b64(cipher.doFinal(Base64.decode(roomKeyB64, Base64.NO_WRAP)))
+        return "v2.${b64(iv)}" to b64(cipher.doFinal(Base64.decode(roomKeyB64, Base64.NO_WRAP)))
     }
 
     fun unwrap(wrapped: String, iv: String, theirPubJson: String): String {
+        val legacy = !iv.startsWith("v2.")
+        val ivRaw = if (legacy) iv else iv.removePrefix("v2.")
         val shared = ecdh(theirPubJson)
+        val key = if (legacy) shared else hkdf(shared)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(shared, "AES"), GCMParameterSpec(128, Base64.decode(iv, Base64.NO_WRAP)))
+        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), GCMParameterSpec(128, Base64.decode(ivRaw, Base64.NO_WRAP)))
         return b64(cipher.doFinal(Base64.decode(wrapped, Base64.NO_WRAP)))
     }
 
@@ -178,6 +182,17 @@ class CollabClient(context: Context) {
                 .put("peerPub", publicJwkJson())
         )
         post("$root/api/rooms/$roomId/notify", token, JSONObject())
+    }
+
+    private fun hkdf(ikm: ByteArray): ByteArray {
+        val extract = Mac.getInstance("HmacSHA256")
+        extract.init(SecretKeySpec("aeko-room-wrap-v2".toByteArray(Charsets.UTF_8), "HmacSHA256"))
+        val prk = extract.doFinal(ikm)
+        val expand = Mac.getInstance("HmacSHA256")
+        expand.init(SecretKeySpec(prk, "HmacSHA256"))
+        expand.update("aeko-ecdh-aes".toByteArray(Charsets.UTF_8))
+        expand.update(byteArrayOf(1))
+        return expand.doFinal().copyOf(32)
     }
 
     private fun ecdh(theirPubJson: String): ByteArray {
