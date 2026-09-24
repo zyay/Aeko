@@ -1,6 +1,7 @@
 import type { MouseEvent, ReactNode } from "react";
 import type { Line } from "@/components/aeko-app-types";
 import { Icon, Icons } from "@/components/icons";
+import { Mascot } from "@/components/mascot";
 import { FloraFrame } from "@/components/flora-shell";
 import { MarkdownContent } from "@/components/markdown-content";
 import { getAgent } from "@/lib/agents";
@@ -127,11 +128,7 @@ export function IconTeam({ size = 16 }: { size?: number }) {
 }
 
 export function BrandMark({ size = 32 }: { size?: number }) {
-  return (
-    <span className="brand-mark flora-mark" style={{ width: size, height: size }} aria-hidden>
-      <i /><i /><i /><i />
-    </span>
-  );
+  return <Mascot size={size} className="brand-mark flora-mark" />;
 }
 
 export function LegalPage({ title, children, backHref = "/" }: { title: string; children: ReactNode; backHref?: string }) {
