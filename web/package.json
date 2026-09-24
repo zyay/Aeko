@@ -22,7 +22,7 @@
     "next": "^15.1.0",
     "next-auth": "5.0.0-beta.32",
     "zod": "^3.25.76",
-    "react": "^18.3.1",
+    "react": "^19.3.0",
     "react-dom": "^18.3.1",
     "thinking-orbs": "^0.3.1",
     "web-push": "^3.6.7"
@@ -30,7 +30,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "@types/node": "^22.20.4",
-    "@types/react": "^18.3.12",
+    "@types/react": "^19.3.0",
     "@types/react-dom": "^18.3.1",
     "eslint": "^9.16.0",
     "eslint-config-next": "^15.1.0",
