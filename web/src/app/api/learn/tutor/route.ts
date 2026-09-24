@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
   const session = await auth();
   const rateKey = session?.user?.email ? `tutor:${session.user.email}` : `tutor:${ip}`;
-  if (!rateLimit(rateKey, session?.user?.email ? 60 : 20, 60_000)) {
+  if (!(await rateLimit(rateKey, session?.user?.email ? 60 : 20, 60_000))) {
     return NextResponse.json({ error: "Rate limited" }, { status: 429 });
   }
 

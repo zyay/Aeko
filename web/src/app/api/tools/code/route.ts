@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { requireEmail } from "@/lib/session";
+import { codeSchema, readJson } from "@/lib/api-guard";
 import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   const email = await requireEmail(req);
   if (!email) return NextResponse.json({ error: "auth" }, { status: 401 });
-  if (!rateLimit(`code:${email}`, 10)) return NextResponse.json({ error: "rate" }, { status: 429 });
+  if (!(await rateLimit(`code:${email}`, 10))) return NextResponse.json({ error: "rate" }, { status: 429 });
 
-  const body = (await req.json()) as { code?: string };
-  const code = body.code?.trim().slice(0, 4000);
+  const parsed = await readJson(req, codeSchema);
+  if ("error" in parsed) return parsed.error;
+  const code = parsed.data.code;
   if (!code) return NextResponse.json({ error: "code" }, { status: 400 });
   if (/process|require|import|fetch|eval|Function|globalThis|window|document/i.test(code)) {
     return NextResponse.json({ text: "Blocked: unsafe identifiers in snippet." });

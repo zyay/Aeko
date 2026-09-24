@@ -5,7 +5,7 @@ const MAX_BYTES = 100_000;
 
 export async function GET(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-  if (!rateLimit(`skills-fetch:${ip}`, 40, 60_000)) {
+  if (!(await rateLimit(`skills-fetch:${ip}`, 40, 60_000))) {
     return NextResponse.json({ error: "Rate limited" }, { status: 429 });
   }
 

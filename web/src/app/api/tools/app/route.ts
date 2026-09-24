@@ -15,7 +15,7 @@ function stringArgs(value: unknown) {
 export async function POST(req: Request) {
   const email = await requireEmail(req);
   if (!email) return NextResponse.json({ error: "Sign in before using a connected app." }, { status: 401 });
-  if (!rateLimit(`app:${email}`, 20)) return NextResponse.json({ error: "Too many app calls. Wait a minute and try again." }, { status: 429 });
+  if (!(await rateLimit(`app:${email}`, 20))) return NextResponse.json({ error: "Too many app calls. Wait a minute and try again." }, { status: 429 });
 
   let body: { app?: string; action?: string; args?: unknown; token?: string };
   try {

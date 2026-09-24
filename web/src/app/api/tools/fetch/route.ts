@@ -1,6 +1,7 @@
 import { lookup } from "node:dns/promises";
 import { NextResponse } from "next/server";
 import { requireEmail } from "@/lib/session";
+import { fetchSchema, readJson } from "@/lib/api-guard";
 import { rateLimit } from "@/lib/rate-limit";
 import { isPrivateAddress, isPublicHttpsUrl } from "@/lib/public-url";
 
@@ -46,10 +47,11 @@ async function readPublic(start: string) {
 export async function POST(req: Request) {
   const email = await requireEmail(req);
   if (!email) return NextResponse.json({ error: "auth" }, { status: 401 });
-  if (!rateLimit(`fetch:${email}`, 15)) return NextResponse.json({ error: "rate" }, { status: 429 });
+  if (!(await rateLimit(`fetch:${email}`, 15))) return NextResponse.json({ error: "rate" }, { status: 429 });
 
-  const body = (await req.json()) as { url?: string };
-  const url = body.url?.trim();
+  const parsed = await readJson(req, fetchSchema);
+  if ("error" in parsed) return parsed.error;
+  const url = parsed.data.url;
   if (!url || !isPublicHttpsUrl(url)) return NextResponse.json({ error: "url" }, { status: 400 });
   const text = await readPublic(url).catch(() => null);
   return NextResponse.json({ text: text || "Could not read that page." });

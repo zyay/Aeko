@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import { rejectCrossOrigin } from "@/lib/api-guard";
 import { rateLimit, requestIp } from "@/lib/rate-limit";
 
 const PUBLIC = new Set(["/login", "/signup", "/privacy", "/terms", "/api/health"]);
@@ -14,12 +15,18 @@ function isPublic(pathname: string) {
   return false;
 }
 
-export default auth((req) => {
+export default auth(async (req) => {
   const { pathname } = req.nextUrl;
   const loggedIn = Boolean(req.auth?.user?.email);
 
-  if (req.method === "POST" && pathname.startsWith("/api/auth") && !rateLimit(`auth:${requestIp(req)}`, 5)) {
+  if (req.method === "POST" && pathname.startsWith("/api/auth") && !(await rateLimit(`auth:${requestIp(req)}`, 5))) {
     return NextResponse.json({ error: "Too many sign-in attempts. Wait a minute." }, { status: 429 });
+  }
+
+  const mutating = req.method === "POST" || req.method === "PUT" || req.method === "PATCH" || req.method === "DELETE";
+  if (mutating && pathname.startsWith("/api/") && !pathname.startsWith("/api/auth") && pathname !== "/api/workflows/hook") {
+    const blocked = rejectCrossOrigin(req);
+    if (blocked) return blocked;
   }
 
   if (pathname === "/api/auth/signin" && req.method === "GET") {

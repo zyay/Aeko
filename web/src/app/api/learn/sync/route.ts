@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { getLearnProfile, upsertLearnProfile } from "@/lib/learn-db";
+import { learnSnapshotSchema, readJson } from "@/lib/api-guard";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -7,10 +8,9 @@ export async function POST(req: Request) {
   if (!session?.user?.email) {
     return NextResponse.json({ error: "auth" }, { status: 401 });
   }
-  const body = (await req.json()) as { snapshot?: unknown; strategy?: "merge" | "replace" };
-  if (!body.snapshot || typeof body.snapshot !== "object") {
-    return NextResponse.json({ error: "invalid" }, { status: 400 });
-  }
+  const parsed = await readJson(req, learnSnapshotSchema, 400_000);
+  if ("error" in parsed) return parsed.error;
+  const body = parsed.data;
   const incoming = body.snapshot as Parameters<typeof upsertLearnProfile>[1];
   if (body.strategy === "merge") {
     const remote = await getLearnProfile(session.user.email);

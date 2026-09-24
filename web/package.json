@@ -20,7 +20,8 @@
     "framer-motion": "^13.4.2",
     "jszip": "^3.10.2",
     "next": "^15.1.0",
-    "next-auth": "5.0.0-beta.25",
+    "next-auth": "5.0.0-beta.32",
+    "zod": "^3.25.76",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "thinking-orbs": "^0.3.1",
@@ -34,5 +35,8 @@
     "eslint": "^9.16.0",
     "eslint-config-next": "^15.1.0",
     "typescript": "~5.6.2"
+  },
+  "overrides": {
+    "postcss": "8.5.28"
   }
 }

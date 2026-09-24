@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { requireEmail } from "@/lib/session";
+import { readJson, searchSchema } from "@/lib/api-guard";
 import { rateLimit } from "@/lib/rate-limit";
 import { formatHits, parseDuckHtml, type SearchHit } from "@/lib/search-results";
 
 export async function POST(req: Request) {
   const email = await requireEmail(req);
   if (!email) return NextResponse.json({ error: "auth" }, { status: 401 });
-  if (!rateLimit(`search:${email}`, 20)) return NextResponse.json({ error: "rate" }, { status: 429 });
+  if (!(await rateLimit(`search:${email}`, 20))) return NextResponse.json({ error: "rate" }, { status: 429 });
 
-  const body = (await req.json()) as { query?: string };
-  const query = body.query?.trim().slice(0, 200);
+  const parsed = await readJson(req, searchSchema);
+  if ("error" in parsed) return parsed.error;
+  const query = parsed.data.query;
   if (!query) return NextResponse.json({ error: "query" }, { status: 400 });
 
   const hits: SearchHit[] = [];

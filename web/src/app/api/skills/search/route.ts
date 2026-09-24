@@ -64,7 +64,7 @@ async function githubSearch(query: string, token?: string) {
 
 export async function GET(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for") ?? "local";
-  if (!rateLimit(`skills-search:${ip}`, 30, 60_000)) {
+  if (!(await rateLimit(`skills-search:${ip}`, 30, 60_000))) {
     return NextResponse.json({ error: "Rate limited" }, { status: 429 });
   }
 
