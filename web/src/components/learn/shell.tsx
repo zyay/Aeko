@@ -7,6 +7,8 @@ import { motion } from "framer-motion";
 import {
   CommentIcon,
   GearIcon,
+  MoonIcon,
+  SunIcon,
   GraphIcon,
   HomeIcon,
   BookIcon,
@@ -54,8 +56,8 @@ export function LearnShell({
           </span>
           <span className="flora-title">Learn</span>
         </Link>
-        <button type="button" className="flora-share" onClick={() => setMode(theme === "dark" ? "light" : "dark")}>
-          {theme === "dark" ? "White" : "Black"}
+        <button type="button" className="flora-icon-corner" aria-label={theme === "dark" ? "Light theme" : "Dark theme"} title={theme === "dark" ? "Light theme" : "Dark theme"} onClick={() => setMode(theme === "dark" ? "light" : "dark")}>
+          <Icon icon={theme === "dark" ? SunIcon : MoonIcon} size={16} />
         </button>
       </header>
       <nav className="flora-rail" aria-label="Learn">

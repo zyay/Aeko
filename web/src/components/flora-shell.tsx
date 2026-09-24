@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { MoonIcon, SunIcon } from "@primer/octicons-react";
 import { Icon, Icons } from "@/components/icons";
+import { signOutNow } from "@/lib/sign-out";
 
 export type FloraTab = "Home" | "Stream" | "Agents" | "Skills" | "Workflows";
 
@@ -41,10 +42,12 @@ export function FloraFrame({ children }: { children: ReactNode }) {
       </div>
       <button
         type="button"
-        className="flora-share flora-theme-corner"
+        className="flora-icon-corner"
+        aria-label={theme === "dark" ? "Light theme" : "Dark theme"}
+        title={theme === "dark" ? "Light theme" : "Dark theme"}
         onClick={() => setMode(theme === "dark" ? "light" : "dark")}
       >
-        {theme === "dark" ? "White" : "Black"}
+        <Icon icon={theme === "dark" ? SunIcon : MoonIcon} size={16} />
       </button>
     </div>
   );
@@ -163,8 +166,8 @@ export function FloraShell({
           <p>{brainOk ? "Model live" : "Model offline"}</p>
           <button type="button" className="flora-pop-btn" onClick={onSettings}>Settings</button>
           <Link href="/learn/plan">Learn</Link>
-          <form action="/api/auth/signout" method="POST">
-            <button type="submit" className="flora-pop-btn">Sign out</button>
+          <form action={signOutNow}>
+            <button type="submit" className="flora-signout">Sign out</button>
           </form>
         </motion.div>
       )}

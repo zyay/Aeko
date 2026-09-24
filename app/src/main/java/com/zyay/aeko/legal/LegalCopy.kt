@@ -22,19 +22,21 @@ Opt-in. Valid key test turns Online on. Notifications never include message text
 Strobi via @bible-strong/avatar-react is AGPL on the website only.
 
 6. Contact
-https://github.com/zyay/Lyan
+hello@getaeko.com
+https://github.com/zyay/Aeko
 """
 
     const val terms = """
 AEKO TERMS OF USE
 Effective: 16 September 2026
 
-Install the signed APK from GitHub Releases (latest). Enable unknown sources.
+Install is from source in this repository. A public APK release is not published right now.
 
 You bring the brain (API key+URL, own server, or GGUF). Shared tasks are E2E ciphertext (JWK ECDH). SSH/VNC can control a PC you configure.
 
 Web mascot (Strobi) is AGPL. The rest of Aeko is MIT.
 
-https://github.com/zyay/Lyan
+https://github.com/zyay/Aeko
+hello@getaeko.com
 """
 }

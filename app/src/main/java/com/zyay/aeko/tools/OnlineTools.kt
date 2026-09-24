@@ -67,7 +67,7 @@ class OnlineTools(
         if (!isPublicHttpUrl(url)) return null
         val request = Request.Builder()
             .url(url)
-            .header("User-Agent", "Aeko/1.0 (on-device agent; +https://github.com/zyay/Lyan)")
+            .header("User-Agent", "Aeko/1.0 (on-device agent; +https://github.com/zyay/Aeko)")
             .build()
         return runCatching {
             client.newCall(request).execute().use { response ->

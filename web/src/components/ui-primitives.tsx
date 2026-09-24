@@ -57,13 +57,15 @@ export function MessageRow({
 export function AppFooter() {
   return (
     <footer className="app-footer">
+      <span>© 2026 Aeko</span>
+      <span aria-hidden>·</span>
+      <a href="https://github.com/zyay/Aeko/blob/master/LICENSE">MIT</a>
+      <span aria-hidden>·</span>
       <a href="/privacy">Privacy</a>
       <span aria-hidden>·</span>
       <a href="/terms">Terms</a>
       <span aria-hidden>·</span>
-      <a href="https://getaeko.com" target="_blank" rel="noreferrer">
-        getaeko.com
-      </a>
+      <a href="https://github.com/zyay/Aeko">GitHub</a>
     </footer>
   );
 }
