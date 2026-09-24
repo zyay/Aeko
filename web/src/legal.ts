@@ -24,7 +24,8 @@ Android Online: web_search / http_fetch / SSH. Auto-on after a valid key test.
 Strobi (@bible-strong/avatar-react) is AGPL-licensed. It runs only in the browser.
 
 8. Contact
-https://github.com/zyay/Lyan
+hello@getaeko.com
+https://github.com/zyay/Aeko
 `;
 
 export const termsText = `AEKO TERMS OF USE
@@ -42,11 +43,12 @@ Invites use the email of a signed-in account. E2E requires both devices to hold 
 4. Remote tools
 SSH and Agent intents can affect devices you connect. Not professional advice.
 
-6. Sideload
-Install the signed APK from GitHub Releases (latest). Enable unknown sources.
+5. Android
+The Android client lives in this repository. A downloadable build is not published right now.
 
-7. Mascot
+6. Mascot
 Strobi on the website is AGPL. The rest of Aeko is MIT.
 
-Project: https://github.com/zyay/Lyan
+Project: https://github.com/zyay/Aeko
+Contact: hello@getaeko.com
 `;
