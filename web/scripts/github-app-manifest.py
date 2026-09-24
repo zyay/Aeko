@@ -10,7 +10,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
-AUTH_URL = "https://aeko.vercel.app"
+AUTH_URL = __import__("os").environ.get("AUTH_URL", "https://www.getaeko.com")
 CALLBACK = f"{AUTH_URL}/api/auth/callback/github"
 REDIRECT = "http://127.0.0.1:8765/callback"
 PROJECT_ID = "prj_RWDFj4vmAizJLLRYnMR2QUDndbKJ"

@@ -7,7 +7,7 @@ import subprocess
 import urllib.parse
 import urllib.request
 
-AUTH_URL = "https://aeko.vercel.app"
+AUTH_URL = __import__("os").environ.get("AUTH_URL", "https://www.getaeko.com")
 CALLBACK = f"{AUTH_URL}/api/auth/callback/github"
 
 

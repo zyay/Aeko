@@ -59,8 +59,9 @@ def main():
     ]
     if missing:
         print("Still missing:", ", ".join(missing))
-        print("GitHub callback: https://aeko.vercel.app/api/auth/callback/github")
-        print("Google callback:  https://aeko.vercel.app/api/auth/callback/google")
+        origin = __import__("os").environ.get("AUTH_URL", "https://www.getaeko.com")
+        print(f"GitHub callback: {origin}/api/auth/callback/github")
+        print(f"Google callback:  {origin}/api/auth/callback/google")
         raise SystemExit(1)
     print("OAuth env vars set. Run: vercel deploy --prod")
 

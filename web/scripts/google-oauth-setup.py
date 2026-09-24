@@ -9,8 +9,8 @@ import urllib.request
 from pathlib import Path
 
 PROJECT = "project-ac9fc08d-e2d1-417a-979"
-CALLBACK = "https://aeko.vercel.app/api/auth/callback/google"
-AUTH_URL = "https://aeko.vercel.app"
+AUTH_URL = __import__("os").environ.get("AUTH_URL", "https://www.getaeko.com")
+CALLBACK = f"{AUTH_URL}/api/auth/callback/google"
 VERCEL_PROJECT = "prj_RWDFj4vmAizJLLRYnMR2QUDndbKJ"
 TEAM = "team_3kyqrG7Mo0AuHRZLMm8fQZKR"
 GCLOUD = Path.home() / "AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd"

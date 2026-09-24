@@ -21,7 +21,7 @@ android {
     val storePass = env("AEKO_KEYSTORE_PASSWORD", "LYAN_KEYSTORE_PASSWORD") ?: "lyan-release"
     val alias = env("AEKO_KEY_ALIAS", "LYAN_KEY_ALIAS") ?: "lyan"
     val keyPass = env("AEKO_KEY_PASSWORD", "LYAN_KEY_PASSWORD") ?: "lyan-release"
-    val authUrl = env("AEKO_AUTH_URL", "LYAN_AUTH_URL") ?: "https://aeko.vercel.app"
+    val authUrl = env("AEKO_AUTH_URL", "LYAN_AUTH_URL") ?: "https://www.getaeko.com"
 
     defaultConfig {
         applicationId = "com.zyay.aeko"

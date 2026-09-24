@@ -12,7 +12,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-AUTH_URL = "https://aeko.vercel.app"
+AUTH_URL = os.environ.get("AUTH_URL", "https://www.getaeko.com")
 GITHUB_CALLBACK = f"{AUTH_URL}/api/auth/callback/github"
 GOOGLE_CALLBACK = f"{AUTH_URL}/api/auth/callback/google"
 PROJECT_ID = "prj_RWDFj4vmAizJLLRYnMR2QUDndbKJ"

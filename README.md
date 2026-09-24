@@ -6,8 +6,6 @@
   <a href="https://www.getaeko.com"><strong>Join the waitlist</strong></a>
   &nbsp;&nbsp;·&nbsp;&nbsp;
   <a href="mailto:hello@getaeko.com">hello@getaeko.com</a>
-  &nbsp;&nbsp;·&nbsp;&nbsp;
-  <a href="https://aeko.vercel.app">Open the workspace</a>
 </p>
 
 <p align="center">
@@ -55,7 +53,7 @@ Production health is `GET /api/health`. A durable deploy reports `"db":"postgres
 | Name | What it is |
 | --- | --- |
 | `AUTH_SECRET` | Random 32+ characters |
-| `AUTH_URL` | `https://aeko.vercel.app` |
+| `AUTH_URL` | `https://www.getaeko.com` |
 | `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | GitHub sign-in |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Google sign-in |
 | `DATABASE_URL` | Neon, or another Postgres |
@@ -63,8 +61,8 @@ Production health is `GET /api/health`. A durable deploy reports `"db":"postgres
 
 OAuth callbacks:
 
-- `https://aeko.vercel.app/api/auth/callback/github`
-- `https://aeko.vercel.app/api/auth/callback/google`
+- `https://www.getaeko.com/api/auth/callback/github`
+- `https://www.getaeko.com/api/auth/callback/google`
 
 The Vercel project root is `web/`.
 
