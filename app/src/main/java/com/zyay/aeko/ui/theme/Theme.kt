@@ -7,23 +7,24 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-val AekoBlack = Color(0xFFFAF9F6)
-val AekoInk = Color(0xFF141414)
-val AekoSurface = Color(0xFFF1EFE9)
-val AekoComposer = Color(0xFFFFFFFF)
-val AekoMuted = Color(0xFF8A8680)
-val AekoText = Color(0xFF141414)
-val AekoAccent = Color(0xFFFB923C)
-val AekoCyan = Color(0xFF38BDF8)
-val AekoChip = Color(0xFFF3F1EC)
-val AekoLine = Color(0xFFECEAE6)
+val AekoBlack = Color(0xFF050505)
+val AekoInk = Color(0xFFF5F5F5)
+val AekoOnInk = Color(0xFF050505)
+val AekoSurface = Color(0xFF111111)
+val AekoComposer = Color(0xFF111111)
+val AekoMuted = Color(0xFF8E8E93)
+val AekoText = Color(0xFFF5F5F5)
+val AekoAccent = Color(0xFFF5F5F5)
+val AekoCyan = Color(0xFF8E8E93)
+val AekoChip = Color(0xFF1C1C1C)
+val AekoLine = Color(0xFF2A2A2A)
 
-val BlobGreen = Color(0xFF22C55E)
-val BlobPink = Color(0xFFFB7185)
-val BlobPurple = Color(0xFFA78BFA)
-val BlobOrange = Color(0xFFFB923C)
-val BlobBlue = Color(0xFF38BDF8)
-val BlobTeal = Color(0xFF2DD4BF)
+val BlobGreen = Color(0xFF2A2A2A)
+val BlobPink = Color(0xFF222222)
+val BlobPurple = Color(0xFF2A2A2A)
+val BlobOrange = Color(0xFF1C1C1C)
+val BlobBlue = Color(0xFF2A2A2A)
+val BlobTeal = Color(0xFF222222)
 
 val AekoTypography = Typography(
     bodyLarge = TextStyle(

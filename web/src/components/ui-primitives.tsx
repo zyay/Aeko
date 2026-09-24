@@ -135,6 +135,7 @@ export function LegalPage({ title, children, backHref = "/" }: { title: string; 
   return (
     <FloraFrame>
       <div className="flora-sheet" style={{ width: "min(680px, 100%)" }}>
+        <Mascot size={36} label="Aeko" />
         <a className="back" href={backHref}>
           <IconBack /> Back
         </a>
@@ -152,6 +153,7 @@ export function AndroidHandoff({ deepLink }: { deepLink: string }) {
   return (
     <FloraFrame>
       <div className="flora-sheet flora-auth-card android-card">
+        <Mascot size={48} label="Aeko" />
         <h1>Opening Aeko on Android</h1>
         <p>Your sign-in code is ready. If nothing happens, tap below.</p>
         <a className="btn-primary" href={deepLink}>

@@ -76,7 +76,7 @@ const TASK_DEFAULTS: LearnTaskState[] = [
 const DEFAULT_TUTOR: LearnTutorConfig = {
   baseUrl: "https://api.openai.com/v1",
   apiKey: "",
-  model: "gpt-4o-mini",
+  model: "gpt-6-astra",
   valid: false,
 };
 
@@ -108,7 +108,11 @@ function normalize(raw: Partial<LearnSnapshot> | null): LearnSnapshot {
     chat: raw.chat ?? [],
     completedItems: raw.completedItems ?? [],
     examScores: raw.examScores ?? [],
-    tutor: { ...DEFAULT_TUTOR, ...raw.tutor },
+    tutor: {
+      ...DEFAULT_TUTOR,
+      ...raw.tutor,
+      model: !raw.tutor?.model || raw.tutor.model === "gpt-4o-mini" ? DEFAULT_TUTOR.model : raw.tutor.model,
+    },
   };
 }
 

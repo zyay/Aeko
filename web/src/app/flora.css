@@ -438,7 +438,6 @@
 .pick.on { background: var(--flora-hover); border-color: var(--flora-strong); }
 .flora-mark-lg { width: 72px; height: 72px; }
 .flora section.flora-signin h1 { margin: 18px 0 6px; font-size: 32px; letter-spacing: -0.045em; }
-.pixel-word { color: var(--flora-text); margin-top: 4px; }
 .auth-tag { margin: 12px 0 0; font-size: 14px; letter-spacing: -0.01em; }
 .trust-row {
   display: flex;

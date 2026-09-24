@@ -14,7 +14,7 @@ export function AuthScreen({
 }) {
   return (
     <AuthGateShell>
-      <Mascot size={72} className="flora-mark flora-mark-lg" />
+      <Mascot size={72} className="flora-mark flora-mark-lg" label="Aeko" />
       <p className="auth-tag">Intelligence without surveillance.</p>
       <h1>Sign in</h1>
       <p>Pick a provider. Your keys never leave your device — we only verify who you are.</p>

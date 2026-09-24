@@ -35,7 +35,7 @@ class LlmClient {
             .put(JSONObject().put("role", "system").put("content", system))
             .put(JSONObject().put("role", "user").put("content", user))
         val body = JSONObject()
-            .put("model", model.ifBlank { "gpt-4o-mini" })
+            .put("model", model.ifBlank { "gpt-6-astra" })
             .put("messages", messages)
             .put("temperature", 0.4)
             .put("stream", true)

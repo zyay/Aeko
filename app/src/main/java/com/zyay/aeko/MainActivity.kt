@@ -10,7 +10,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
         ingestAuth(intent)
         setContent {
             MaterialTheme(
-                colorScheme = lightColorScheme(background = AekoBlack, surface = AekoBlack, onBackground = AekoInk),
+                colorScheme = darkColorScheme(background = AekoBlack, surface = AekoSurface, onBackground = AekoText, onSurface = AekoText, primary = AekoInk),
                 typography = AekoTypography
             ) {
                 Surface(modifier = Modifier.fillMaxSize(), color = AekoBlack) {

@@ -13,9 +13,10 @@ import {
 } from "@/lib/crypto";
 import { buildChatHistory, decryptLine, encodeCanvas } from "@/lib/chat-history";
 import { buildAgentSystem, executeAgentTools, runAgentLoop, shouldInvokeAgent } from "@/lib/agent-engine";
-import { encodeAssistantPayload, AGENT_ROSTER, getAgent, getRoomAgentId, setRoomAgentId, parseAgentMention } from "@/lib/agents";
+import { encodeAssistantPayload, AGENT_ROSTER, getAgent, getRoomAgentId, setRoomAgentId, parseAgentMention, listAgents, type AgentDef } from "@/lib/agents";
+import { applySetupDraft } from "@/lib/setup-draft";
 import { ensureIdentity, syncIdentityToServer } from "@/lib/identity";
-import { shouldUseProxy } from "@/lib/llm";
+import { QUALITY_MODEL, shouldUseProxy } from "@/lib/llm";
 import { registerWebPush } from "@/lib/push-client";
 import { clearVault, loadVault, saveVault } from "@/lib/vault-store";
 import { appendLocalMessage, deleteLocalRoom, renameLocalRoom, replaceLocalMessages } from "@/lib/local-rooms";
@@ -30,7 +31,7 @@ export function formatTime(ts: number) {
 }
 
 function emptyBrain(): BrainConfig {
-  return { mode: "byok", baseUrl: "", apiKey: "", model: "gpt-4o-mini", proxyViaVercel: false, valid: false, onboarded: true };
+  return { mode: "byok", baseUrl: "https://api.openai.com/v1", apiKey: "", model: QUALITY_MODEL, proxyViaVercel: false, valid: false, onboarded: true };
 }
 
 export function useAekoWorkspace(userEmail: string, initialRoomId?: string, initialView: View = "desk") {
@@ -72,6 +73,7 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
   const [reactions, setReactions] = useState<{ messageId: string; email: string; emoji: string }[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [activeAgentId, setActiveAgentId] = useState("aeko");
+  const [agentList, setAgentList] = useState<AgentDef[]>(AGENT_ROSTER);
   const [enginePhase, setEnginePhase] = useState<"idle" | "thinking" | "speaking">("idle");
   const abortRef = useRef<AbortController | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -88,16 +90,33 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
   }, [initialRoomId]);
 
   useEffect(() => {
+    const sync = () => setAgentList(listAgents());
+    sync();
+    window.addEventListener("aeko-agents-change", sync);
+    return () => window.removeEventListener("aeko-agents-change", sync);
+  }, []);
+
+  useEffect(() => {
     if (pathname?.startsWith("/t/")) setView("chat");
     else if (pathname === "/settings") setView("brain");
     else if (pathname === "/") setView("desk");
   }, [pathname]);
 
   useEffect(() => {
-    loadBrain().then((b) => {
+    loadBrain().then(async (b) => {
       const raw = b ?? emptyBrain();
-      const cfg: BrainConfig = { ...raw, mode: raw.mode === "server" ? "server" : "byok", onboarded: true };
-      if (!raw.onboarded) void saveBrain(cfg);
+      const model = !raw.model || raw.model === "gpt-4o-mini" ? QUALITY_MODEL : raw.model;
+      let cfg: BrainConfig = {
+        ...raw,
+        model,
+        baseUrl: raw.baseUrl || "https://api.openai.com/v1",
+        mode: raw.mode === "server" ? "server" : "byok",
+        onboarded: true,
+      };
+      const applied = await applySetupDraft(cfg);
+      cfg = applied.cfg;
+      if (applied.agentId) setActiveAgentId(applied.agentId);
+      if (!applied.saved && (!raw.onboarded || model !== raw.model)) void saveBrain(cfg);
       setBrain(cfg);
       setReady(true);
       if (!cfg.valid && initialView !== "brain") {
@@ -599,7 +618,7 @@ export function useAekoWorkspace(userEmail: string, initialRoomId?: string, init
       hint: r.local ? "Local task" : "Cloud task",
       run: () => openChat(r.id),
     })),
-    ...AGENT_ROSTER.map((a) => ({
+    ...agentList.map((a) => ({
       id: `agent-${a.id}`,
       label: `Switch to ${a.name}`,
       hint: a.tagline,

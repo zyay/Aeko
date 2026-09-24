@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AGENT_ROSTER } from "@/lib/agents";
+import { AGENT_ROSTER, AGENT_TOOLS, createCustomAgent, listAgents, type AgentTool } from "@/lib/agents";
 import { setTriage, triageMap, type Triage } from "@/lib/work-store";
 import type { Room, RoomPreview } from "@/components/aeko-app-types";
 import { EmptyState } from "@/components/ui-kit";
@@ -46,17 +46,28 @@ export function WorkHub({
   const [skillQuery, setSkillQuery] = useState("");
   const [found, setFound] = useState<SkillEntry[]>(CURATED_SKILLS.slice(0, 8));
   const [skillNote, setSkillNote] = useState("");
+  const [agents, setAgents] = useState(AGENT_ROSTER);
+  const [botName, setBotName] = useState("");
+  const [botRole, setBotRole] = useState("");
+  const [botPrompt, setBotPrompt] = useState("");
+  const [botTools, setBotTools] = useState<AgentTool[]>(["file_read", "doc_edit", "skill_read"]);
 
   useEffect(() => {
     setMap(triageMap());
+    setAgents(listAgents());
     setInstalled(listInstalledSkills());
+    const syncAgents = () => setAgents(listAgents());
+    window.addEventListener("aeko-agents-change", syncAgents);
     const refresh = () => setInstalled(listInstalledSkills());
     window.addEventListener("abc-skills-change", refresh);
     void fetch("/api/workflows")
       .then((r) => r.json())
       .then((j: { workflows?: { id: string; name: string; enabled: boolean; yaml: string }[] }) => setFlows(j.workflows ?? []))
       .catch(() => setFlows([]));
-    return () => window.removeEventListener("abc-skills-change", refresh);
+    return () => {
+      window.removeEventListener("abc-skills-change", refresh);
+      window.removeEventListener("aeko-agents-change", syncAgents);
+    };
   }, []);
 
   return (
@@ -117,32 +128,43 @@ export function WorkHub({
       )}
 
       {tab === "Agents" && (
-        <div className="work-list">
-          {AGENT_ROSTER.map((a) => (
-            <div key={a.id} className="work-row static">
-              <div>
+        <div className="setup-fields">
+          <div className="pick-grid">
+            {agents.map((a) => (
+              <button key={a.id} type="button" className={activeAgentId === a.id ? "pick on" : "pick"} onClick={() => onAgentSelect?.(a.id)}>
                 <strong>{a.name}</strong>
-                <div className="work-muted">{a.tagline}</div>
-              </div>
-              <button
-                type="button"
-                className={activeAgentId === a.id ? "head-chip on" : "head-chip"}
-                onClick={() => onAgentSelect?.(a.id)}
-              >
-                {activeAgentId === a.id ? "Active" : "Use"}
+                <span>{a.tagline}</span>
               </button>
-              <button
-                type="button"
-                className="head-chip"
-                onClick={() => {
-                  const url = `${window.location.origin}/add/agent?id=${a.id}`;
-                  void navigator.clipboard.writeText(url);
-                }}
-              >
-                Copy invite
-              </button>
-            </div>
-          ))}
+            ))}
+          </div>
+          <p className="work-kicker">Your own bot</p>
+          <input className="field" value={botName} placeholder="Name" onChange={(e) => setBotName(e.target.value)} />
+          <input className="field" value={botRole} placeholder="Role" onChange={(e) => setBotRole(e.target.value)} />
+          <textarea className="field" value={botPrompt} placeholder="Instructions" onChange={(e) => setBotPrompt(e.target.value)} />
+          <div className="tool-row">
+            {AGENT_TOOLS.map((tool) => {
+              const on = botTools.includes(tool.id);
+              return (
+                <button key={tool.id} type="button" className={on ? "tool on" : "tool"} onClick={() => setBotTools((current) => (on ? current.filter((id) => id !== tool.id) : [...current, tool.id]))}>
+                  {tool.label}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            className="blackpill"
+            disabled={botName.trim().length < 2 || botPrompt.trim().length < 8}
+            onClick={() => {
+              const agent = createCustomAgent({ name: botName, tagline: botRole, systemPrompt: botPrompt, tools: botTools });
+              setBotName("");
+              setBotRole("");
+              setBotPrompt("");
+              onAgentSelect?.(agent.id);
+            }}
+          >
+            Create bot
+          </button>
         </div>
       )}
 
@@ -220,7 +242,9 @@ export function WorkHub({
             <div key={f.id} className="work-row static">
               <div>
                 <strong>{f.name}</strong>
-                <div className="work-muted">{f.yaml.match(/^agent:\s*(\S+)/m)?.[1] ?? "aeko"} · message</div>
+                <div className="work-muted">
+                  {f.yaml.match(/^agent:\s*(\S+)/m)?.[1] ?? "aeko"} · {f.yaml.match(/^channel:\s*(\S+)/m)?.[1] || "no channel"}
+                </div>
               </div>
               <span className={f.enabled ? "head-chip on" : "head-chip"}>{f.enabled ? "On" : "Off"}</span>
             </div>
@@ -250,6 +274,7 @@ function WorkflowForm({ roomId, onSaved }: { roomId: string | null; onSaved: () 
         });
       }}
     >
+      <p className="work-kicker">{roomId ? `Runs when a message arrives in this channel (${roomId}).` : "Open a channel first. This workflow needs a channel id."}</p>
       <input value={name} onChange={(e) => setName(e.target.value)} aria-label="Workflow name" />
       <textarea value={yaml} onChange={(e) => setYaml(e.target.value)} rows={4} aria-label="Workflow yaml" />
       <button type="submit">Save workflow</button>

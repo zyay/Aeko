@@ -1,6 +1,7 @@
 ﻿"use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { WORKSPACE_NAME_KEY, WORKSPACE_PURPOSE_KEY } from "@/lib/setup-draft";
 import { saveBrain } from "@/lib/crypto";
 import { setRoomAgentId } from "@/lib/agents";
 import type { View } from "@/components/aeko-app-types";
@@ -25,6 +26,20 @@ export function AekoApp({
 }) {
   const ws = useAekoWorkspace(userEmail, initialRoomId, initialView);
   const [tab, setTab] = useState<FloraTab>("Home");
+  const [workspaceName, setWorkspaceName] = useState("Workspace");
+  const [workspaceHint, setWorkspaceHint] = useState("");
+  useEffect(() => {
+    if (!ws.ready) return;
+    const read = () => {
+      const saved = localStorage.getItem(WORKSPACE_NAME_KEY);
+      const purpose = localStorage.getItem(WORKSPACE_PURPOSE_KEY);
+      if (saved) setWorkspaceName(saved);
+      setWorkspaceHint(purpose || "");
+    };
+    read();
+    window.addEventListener("aeko-workspace-change", read);
+    return () => window.removeEventListener("aeko-workspace-change", read);
+  }, [ws.ready]);
 
   if (!ws.ready || !ws.brain) return <WorkspaceSkeleton />;
 
@@ -49,7 +64,8 @@ export function AekoApp({
 
   return (
     <FloraShell
-      title={ws.view === "chat" ? ws.current || "Untitled" : "Workspace"}
+      title={ws.view === "chat" ? ws.current || "Untitled" : workspaceName}
+      hint={ws.view === "chat" ? undefined : workspaceHint}
       userEmail={userEmail}
       brainOk={ws.brain.valid}
       taskCount={ws.notifications.length}

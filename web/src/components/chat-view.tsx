@@ -7,7 +7,7 @@ import { ThinkingOrb } from "@/components/thinking-orb";
 import { Icon, Icons } from "@/components/icons";
 import { EmptyState, IconBtn } from "@/components/ui-kit";
 import type { BrainConfig, Line } from "@/components/aeko-app-types";
-import { AGENT_ROSTER, mentionQuery, type AgentDef } from "@/lib/agents";
+import { listAgents, mentionQuery, type AgentDef } from "@/lib/agents";
 import { listInstalledSkills, skillQuery } from "@/lib/skill-context";
 import { ChannelExtras } from "@/components/channel-extras";
 import {
@@ -246,7 +246,7 @@ export function ChatView({
               )}
               {mentionQuery(draft) !== null && (
                 <div className="mention-pop" role="listbox" aria-label="Agents">
-                  {AGENT_ROSTER.filter((a) => a.name.toLowerCase().includes(mentionQuery(draft) || "") || a.id.includes(mentionQuery(draft) || "")).map((a) => (
+                  {listAgents().filter((a) => a.name.toLowerCase().includes(mentionQuery(draft) || "") || a.id.includes(mentionQuery(draft) || "")).map((a) => (
                     <button
                       key={a.id}
                       type="button"

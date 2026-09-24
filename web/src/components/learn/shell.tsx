@@ -84,7 +84,10 @@ export function LearnShell({
 export function LearnAuthShell({ children }: { children: ReactNode }) {
   return (
     <FloraFrame>
-      <div className="flora-sheet flora-auth-card">{children}</div>
+      <div className="flora-sheet flora-auth-card">
+        <Mascot size={36} label="Aeko" />
+        {children}
+      </div>
     </FloraFrame>
   );
 }

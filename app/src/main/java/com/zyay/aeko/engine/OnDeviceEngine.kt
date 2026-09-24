@@ -31,6 +31,7 @@ class OnDeviceEngine(
         brainValid: Boolean = false,
         brainMode: String = "byok",
         ggufPath: String? = null,
+        persona: String = "You are Aeko, a sharp personal assistant. Be concise, useful, and direct.",
         onTrace: (String) -> Unit = {},
         onDelta: (String) -> Unit = {},
         shouldStop: () -> Boolean = { false }
@@ -54,7 +55,7 @@ class OnDeviceEngine(
         val netBlock = if (notes.isNotEmpty()) "\n\nOpenHands-style tools:\n" + notes.joinToString("\n\n") else ""
         val lower = prompt.lowercase()
         val system = buildString {
-            append("You are Aeko, a personal employee. Be concise and useful.")
+            append(persona)
             if (agentEnabled) append(" Agent mode is on.")
             if (vault.isNotBlank()) append(" The user attached a local vault; prefer it.")
         }

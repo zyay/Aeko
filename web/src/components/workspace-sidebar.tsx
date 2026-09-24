@@ -4,6 +4,7 @@ import { useState, type RefObject } from "react";
 import { AgentsRail } from "@/components/agents-rail";
 import { StatusPill } from "@/components/ui-kit";
 import type { BrainConfig, Room } from "@/components/aeko-app-types";
+import { signOutNow } from "@/lib/sign-out";
 import {
   BrandMark,
   IconHome,
@@ -150,8 +151,8 @@ export function WorkspaceSidebar({
       <div className="sidebar-footer">
         <StatusPill ok={brain.valid} label={brain.valid ? "Model live" : "Model offline"} />
         <div className="sidebar-user">{userEmail}</div>
-        <form action="/api/auth/signout" method="POST">
-          <button type="submit" className="ghostlink">
+        <form action={signOutNow}>
+          <button type="submit" className="flora-signout">
             Sign out
           </button>
         </form>

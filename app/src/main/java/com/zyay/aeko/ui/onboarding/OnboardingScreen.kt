@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -55,6 +56,7 @@ import com.zyay.aeko.ui.theme.BlobPurple
 import com.zyay.aeko.ui.theme.BlobTeal
 import com.zyay.aeko.ui.theme.AekoBlack
 import com.zyay.aeko.ui.theme.AekoInk
+import com.zyay.aeko.ui.theme.AekoOnInk
 import com.zyay.aeko.ui.theme.AekoLine
 import com.zyay.aeko.ui.theme.AekoMuted
 import com.zyay.aeko.ui.theme.AekoText
@@ -114,7 +116,11 @@ fun OnboardingScreen(
                 Spacer(Modifier.height(32.dp))
                 Text("Meet Your First Bot", color = AekoInk, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
                 Spacer(Modifier.weight(1f))
-                ThinkingOrb(size = 168.dp, state = OrbState.Idle)
+                Image(
+                    painter = androidx.compose.ui.res.painterResource(com.zyay.aeko.R.drawable.ic_mascot),
+                    contentDescription = "Aeko",
+                    modifier = Modifier.size(96.dp)
+                )
                 Spacer(Modifier.height(20.dp))
                 Text("Signal Monitor", color = AekoInk, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
                 Text("Watches sites, dashboards, and feeds for changes.", color = AekoMuted, textAlign = TextAlign.Center, lineHeight = 22.sp)
@@ -140,6 +146,15 @@ fun OnboardingScreen(
                     mode = "gguf"; brain.mode = "gguf"
                 }
                 if (mode != "gguf") {
+                    Text("Presets", color = AekoMuted, fontSize = 13.sp)
+                    com.zyay.aeko.brain.ENDPOINT_PRESETS.forEach { preset ->
+                        ModeCard(preset.label, preset.provider, url == preset.baseUrl && model == preset.model) {
+                            mode = preset.mode
+                            brain.mode = preset.mode
+                            url = preset.baseUrl
+                            model = preset.model
+                        }
+                    }
                     OutlinedTextField(url, { url = it }, label = { Text("Base URL") }, colors = fieldColors, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(key, { key = it }, label = { Text("API key") }, colors = fieldColors, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(model, { model = it }, label = { Text("Model") }, colors = fieldColors, modifier = Modifier.fillMaxWidth())
@@ -174,7 +189,7 @@ private fun Pill(label: String, onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().height(52.dp),
         shape = RoundedCornerShape(999.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = AekoInk, contentColor = Color.White)
+        colors = ButtonDefaults.buttonColors(containerColor = AekoInk, contentColor = AekoOnInk)
     ) { Text(label, fontWeight = FontWeight.SemiBold) }
 }
 

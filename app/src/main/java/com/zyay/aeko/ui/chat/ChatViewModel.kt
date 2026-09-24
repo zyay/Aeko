@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.zyay.aeko.BuildConfig
 import com.zyay.aeko.auth.AuthStore
+import com.zyay.aeko.brain.BotRoster
 import com.zyay.aeko.brain.BrainStore
 import com.zyay.aeko.collab.CollabClient
 import com.zyay.aeko.engine.EnginePhase
@@ -378,6 +379,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                         brain.valid,
                         brain.mode,
                         models.current().path,
+                        BotRoster.resolve(getApplication(), prompt).prompt,
                         onTrace = { trace ->
                             viewModelScope.launch {
                                 _state.update { ui ->

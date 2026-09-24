@@ -7,7 +7,38 @@ import { httpFetch, webSearch, readVault, runCodeSnippet } from "@/lib/web-tools
 import { findSkill, formatSkillPack, matchingSkills } from "@/lib/skill-context";
 
 const TOOL_RE = /\[\[tool:(\w+)\]\]\s*(\{[\s\S]*?\})/g;
-const MAX_STEPS = 5;
+const MAX_STEPS = 8;
+
+const TOOL_SPECS: Record<AgentTool, { description: string; properties: Record<string, object>; required: string[] }> = {
+  web_search: { description: "Search the public web.", properties: { query: { type: "string" } }, required: ["query"] },
+  http_fetch: { description: "Read a public https page.", properties: { url: { type: "string" } }, required: ["url"] },
+  file_read: { description: "Read the channel document.", properties: {}, required: [] },
+  code_run: { description: "Run a fenced javascript snippet.", properties: { code: { type: "string" } }, required: ["code"] },
+  doc_edit: { description: "Plan a rewrite of the channel document.", properties: { note: { type: "string" } }, required: [] },
+  skill_read: { description: "Read an installed skill by name.", properties: { name: { type: "string" } }, required: ["name"] },
+};
+
+function toolDefs(tools: AgentTool[]) {
+  return tools.map((name) => ({
+    type: "function" as const,
+    function: {
+      name,
+      description: TOOL_SPECS[name].description,
+      parameters: { type: "object", properties: TOOL_SPECS[name].properties, required: TOOL_SPECS[name].required },
+    },
+  }));
+}
+
+function stringArgs(raw: string): Record<string, string> {
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const out: Record<string, string> = {};
+    for (const [key, value] of Object.entries(parsed)) out[key] = typeof value === "string" ? value : JSON.stringify(value);
+    return out;
+  } catch {
+    return {};
+  }
+}
 
 function wantsWeb(text: string) {
   return /search|look up|latest|news|what is|who is|weather|web|http/i.test(text);
@@ -103,7 +134,7 @@ export async function executeAgentTools(
 export function buildAgentSystem(agent: AgentDef, flags: { codeMode: boolean; vault: boolean; agentMode: boolean }) {
   const toolHelp = [
     `Tools you may call: ${agent.tools.join(", ")}.`,
-    "To call one, emit [[tool:name]] {\"key\":\"value\"} and wait. web_search uses query. http_fetch uses url. code_run uses code. file_read reads the channel document. skill_read uses name. doc_edit means you then wrap the full document in [[doc]]...[[/doc]]. Follow any Skill blocks already in the conversation.",
+    "You may call tools. Prefer the tool interface. If tools are unavailable, emit [[tool:name]] {\"key\":\"value\"} and wait. web_search uses query. http_fetch uses url. code_run uses code. file_read reads the channel document. skill_read uses name. doc_edit means you then wrap the full document in [[doc]]...[[/doc]]. Follow any Skill blocks already in the conversation.",
   ].join(" ");
   return [agent.systemPrompt, toolHelp, flags.agentMode ? "Agent mode on." : "", flags.vault ? "Vault attached." : "", flags.codeMode ? "Use fenced code blocks." : ""]
     .filter(Boolean)
@@ -129,11 +160,12 @@ export async function runAgentLoop(opts: {
 
   for (let step = 0; step < MAX_STEPS; step++) {
     let chunk = "";
-    chunk = await streamChat({
+    const turn = await streamChat({
       baseUrl: opts.brain.baseUrl,
       apiKey: opts.brain.apiKey,
       model: opts.brain.model,
       messages,
+      tools: toolDefs(opts.agent.tools),
       useProxy: opts.useProxy,
       signal: opts.signal,
       onDelta: (d) => {
@@ -142,11 +174,37 @@ export async function runAgentLoop(opts: {
         opts.onDelta(d);
       },
     });
+    chunk = turn.text || chunk;
 
-    const calls = [...chunk.matchAll(TOOL_RE)];
-    if (!calls.length) break;
+    const native = turn.toolCalls.filter((call) => opts.agent.tools.includes(call.name as AgentTool));
+    const textCalls = native.length ? [] : [...chunk.matchAll(TOOL_RE)];
+    if (!native.length && !textCalls.length) break;
 
-    for (const call of calls) {
+    if (native.length) {
+      messages = [
+        ...messages,
+        {
+          role: "assistant",
+          content: chunk,
+          tool_calls: native.map((call) => ({
+            id: call.id || call.name,
+            type: "function" as const,
+            function: { name: call.name, arguments: call.arguments || "{}" },
+          })),
+        },
+      ];
+      for (const call of native) {
+        const name = call.name as AgentTool;
+        toolsUsed.push(name);
+        const note = await runTool(name, stringArgs(call.arguments), { prompt: chunk, vault: opts.toolCtx?.vault, vaultName: opts.toolCtx?.vaultName }).catch((e) => String(e));
+        opts.onTool({ id: `${Date.now()}-${name}`, role: "tool", text: note, at: Date.now() });
+        messages = [...messages, { role: "tool", tool_call_id: call.id || name, content: note }];
+      }
+      full = "";
+      continue;
+    }
+
+    for (const call of textCalls) {
       const name = call[1] as AgentTool;
       if (!opts.agent.tools.includes(name)) continue;
       let args: Record<string, string> = {};

@@ -83,7 +83,7 @@ fun ModelsScreen(store: HfModelStore, onBack: () -> Unit) {
                 enabled = !status.downloading,
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp).height(48.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AekoInk, contentColor = Color.White)
+                colors = ButtonDefaults.buttonColors(containerColor = AekoInk, contentColor = com.zyay.aeko.ui.theme.AekoOnInk)
             ) { Text("Download GGUF", fontWeight = FontWeight.SemiBold) }
             TextButton(onClick = { store.cancel() }, modifier = Modifier.padding(top = 4.dp)) {
                 Text("Cancel", color = AekoText)

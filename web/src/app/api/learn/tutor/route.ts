@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 
   const baseUrl = body.tutor?.baseUrl || process.env.LEARN_TUTOR_BASE_URL || "https://api.openai.com/v1";
   const apiKey = body.tutor?.apiKey || process.env.LEARN_TUTOR_API_KEY || process.env.OPENAI_API_KEY || "";
-  const model = body.tutor?.model || process.env.LEARN_TUTOR_MODEL || "gpt-4o-mini";
+  const model = body.tutor?.model || process.env.LEARN_TUTOR_MODEL || "gpt-6-astra";
 
   if (!apiKey) {
     return NextResponse.json(

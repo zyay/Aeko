@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { LearnShell } from "@/components/learn/shell";
+import { EndpointPick } from "@/components/picks";
 import { loadProfile, loadTutorConfig, saveTutorConfig } from "@/lib/learn-store";
 
 export default function LearnSettingsPage() {
@@ -25,6 +26,14 @@ export default function LearnSettingsPage() {
         <Link href="/learn/plan" className="back">Back to Learn</Link>
         <h1>Tutor settings</h1>
         <p>Bring your own key. It stays in this browser.</p>
+        <EndpointPick
+          activeModel={model}
+          activeBase={baseUrl}
+          onPick={(template) => {
+            setBaseUrl(template.baseUrl);
+            setModel(template.model);
+          }}
+        />
         <div className="learn-field">
           <label htmlFor="base">API base URL</label>
           <input id="base" className="learn-input" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://api.openai.com/v1" />
@@ -35,7 +44,7 @@ export default function LearnSettingsPage() {
         </div>
         <div className="learn-field">
           <label htmlFor="model">Model</label>
-          <input id="model" className="learn-input" value={model} onChange={(e) => setModel(e.target.value)} placeholder="gpt-4o-mini" />
+          <input id="model" className="learn-input" value={model} onChange={(e) => setModel(e.target.value)} placeholder="gpt-6-astra" />
         </div>
         <p className="tiny">Level {profile?.level ?? "—"} · {profile?.dailyMinutes ?? "—"} min a day</p>
         <button type="submit" className="learn-btn primary full">

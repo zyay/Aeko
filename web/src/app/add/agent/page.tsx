@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import { FloraFrame } from "@/components/flora-shell";
+import { Mascot } from "@/components/mascot";
 import { getAgent } from "@/lib/agents";
 
 function AddAgent() {
@@ -20,6 +21,7 @@ function AddAgent() {
   return (
     <FloraFrame>
       <div className="flora-sheet flora-auth-card">
+        <Mascot size={48} label="Aeko" />
         <h1>Adding {agent.name}</h1>
         <p>This agent is pinned to your workspace.</p>
       </div>

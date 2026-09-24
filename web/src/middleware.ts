@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
-const PUBLIC = new Set(["/login", "/privacy", "/terms", "/api/health"]);
+const PUBLIC = new Set(["/login", "/signup", "/privacy", "/terms", "/api/health"]);
 
 function isPublic(pathname: string) {
   if (PUBLIC.has(pathname)) return true;
@@ -23,8 +23,8 @@ export default auth((req) => {
     return NextResponse.redirect(login);
   }
 
-  if (loggedIn && pathname === "/login") {
-    return NextResponse.redirect(new URL("/", req.url));
+  if (loggedIn && (pathname === "/login" || pathname === "/signup")) {
+    return NextResponse.redirect(new URL(pathname === "/signup" ? "/settings" : "/", req.url));
   }
 
   if (!loggedIn && !isPublic(pathname)) {

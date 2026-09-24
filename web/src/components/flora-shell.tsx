@@ -66,9 +66,11 @@ export function FloraShell({
   onSettings,
   onCreateChannel,
   onNotify,
+  hint,
   children,
 }: {
   title: string;
+  hint?: string;
   userEmail: string;
   brainOk: boolean;
   taskCount: number;
@@ -111,7 +113,7 @@ export function FloraShell({
     <div className="flora" data-theme={theme}>
       <div className="flora-stage">{children}</div>
       <header className="flora-top">
-        <button type="button" className="flora-brand" onClick={() => onActive("Home")}>
+        <button type="button" className="flora-brand" title={hint ? `${title}. ${hint}` : title} onClick={() => onActive("Home")}>
           <Mascot size={18} />
           <span className="flora-title">{title}</span>
           <span className="flora-caret">▾</span>
@@ -134,7 +136,7 @@ export function FloraShell({
           <Icon icon={Icons.gear} size={16} />
         </motion.button>
         <div className="flora-rail-gap" />
-        <button type="button" aria-label={theme === "dark" ? "White theme" : "Black theme"} onClick={() => setMode(theme === "dark" ? "light" : "dark")}>
+        <button type="button" aria-label={theme === "dark" ? "Light theme" : "Dark theme"} title={theme === "dark" ? "Light theme" : "Dark theme"} onClick={() => setMode(theme === "dark" ? "light" : "dark")}>
           <Icon icon={theme === "dark" ? SunIcon : MoonIcon} size={16} />
         </button>
         <button type="button" className="flora-avatar" aria-label="Account" onClick={() => setPanel(panel === "account" ? null : "account")}>

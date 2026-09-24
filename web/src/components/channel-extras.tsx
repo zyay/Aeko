@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AGENT_ROSTER, setRoomAgentId } from "@/lib/agents";
+import { AGENT_ROSTER, listAgents, setRoomAgentId } from "@/lib/agents";
 import { EmptyState } from "@/components/ui-kit";
 import type { Line } from "@/components/aeko-app-types";
 import { encodeCanvas, encodeNote, encodePatch } from "@/lib/chat-history";
@@ -39,6 +39,7 @@ export function ChannelExtras({
   const [audit, setAudit] = useState<Audit[]>([]);
   const [skills, setSkills] = useState(listInstalledSkills);
   const [pinned, setPinned] = useState<string[]>([]);
+  const [agents, setAgents] = useState(AGENT_ROSTER);
 
   const canvas = useMemo(() => {
     const rows = messages.filter((m) => m.record === "canvas");
@@ -56,6 +57,10 @@ export function ChannelExtras({
     }
     return [...map.values()];
   }, [messages]);
+
+  useEffect(() => {
+    setAgents(listAgents());
+  }, []);
 
   useEffect(() => {
     setDraft(canvas);
@@ -167,7 +172,7 @@ export function ChannelExtras({
         ))}
       </div>
       <div className="work-tabs">
-        {AGENT_ROSTER.map((a) => (
+        {agents.map((a) => (
           <button key={a.id} type="button" className="head-chip" onClick={() => setRoomAgentId(roomId, a.id)}>
             Add {a.name}
           </button>

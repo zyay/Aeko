@@ -1,13 +1,14 @@
 "use client";
 
+import { Mascot } from "@/components/mascot";
+
 export function WorkspaceSkeleton() {
   return (
-    <div className="aeko-root workspace-skeleton" aria-busy="true">
-      <div className="skeleton-sidebar" />
-      <div className="skeleton-main">
-        <div className="skeleton-bar" />
-        <div className="skeleton-block" />
-        <div className="skeleton-block short" />
+    <div className="flora" data-theme="dark" aria-busy="true">
+      <div className="flora-stage">
+        <div className="flora-center plain">
+          <Mascot size={48} label="Aeko" />
+        </div>
       </div>
     </div>
   );

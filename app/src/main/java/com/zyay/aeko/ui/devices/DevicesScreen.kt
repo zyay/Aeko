@@ -83,7 +83,7 @@ fun DevicesScreen(store: DeviceStore, ssh: SshClient, onBack: () -> Unit, onVnc:
                 },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(48.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AekoInk, contentColor = Color.White)
+                colors = ButtonDefaults.buttonColors(containerColor = AekoInk, contentColor = com.zyay.aeko.ui.theme.AekoOnInk)
             ) { Text(if (connected) "Reconnect SSH" else "Connect SSH", fontWeight = FontWeight.SemiBold) }
             TextButton(onClick = { ssh.disconnect() }) { Text("Disconnect", color = AekoText) }
             if (log.isNotBlank()) Text(log, color = AekoMuted, fontSize = 12.sp, lineHeight = 16.sp)
@@ -95,7 +95,7 @@ fun DevicesScreen(store: DeviceStore, ssh: SshClient, onBack: () -> Unit, onVnc:
                 onClick = { scope.launch { output = withContext(Dispatchers.IO) { ssh.exec(command) } } },
                 enabled = connected,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = AekoInk, contentColor = Color.White)
+                colors = ButtonDefaults.buttonColors(containerColor = AekoInk, contentColor = com.zyay.aeko.ui.theme.AekoOnInk)
             ) { Text("Run on PC") }
             if (output.isNotBlank()) Text(output, color = AekoText, fontSize = 13.sp, lineHeight = 18.sp)
         }
@@ -105,7 +105,7 @@ fun DevicesScreen(store: DeviceStore, ssh: SshClient, onBack: () -> Unit, onVnc:
             Button(
                 onClick = onVnc,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = AekoInk, contentColor = Color.White)
+                colors = ButtonDefaults.buttonColors(containerColor = AekoInk, contentColor = com.zyay.aeko.ui.theme.AekoOnInk)
             ) { Text("Open in-app viewer") }
             TextButton(onClick = {
                 context.startActivity(Intent(Intent.ACTION_VIEW, vnc.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

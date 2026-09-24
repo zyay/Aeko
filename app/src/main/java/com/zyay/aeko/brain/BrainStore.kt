@@ -30,7 +30,7 @@ class BrainStore(context: Context) {
         set(value) { prefs.edit().putString("key", value).apply() }
 
     var model: String
-        get() = prefs.getString("model", "gpt-4o-mini") ?: "gpt-4o-mini"
+        get() = prefs.getString("model", "gpt-6-astra") ?: "gpt-6-astra"
         set(value) { prefs.edit().putString("model", value).apply() }
 
     var valid: Boolean
