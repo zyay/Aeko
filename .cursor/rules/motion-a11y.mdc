@@ -1,0 +1,12 @@
+---
+description: Purposeful motion, cautious WebGL, accessibility
+alwaysApply: true
+---
+
+# Motion, WebGL, a11y
+
+Motion (Framer Motion or CSS) is for hierarchy, feedback, and state change. Prefer `transform` and `opacity`. Honor `prefers-reduced-motion`. Do not animate everything.
+
+WebGL only when it helps (ambient desk field, spatial viz). Always: feature detect, fallback, resize, rAF cleanup, reduced-motion pause, keep text readable. Current field is `web/src/components/desk-field.tsx` raw WebGL, loaded `ssr: false`.
+
+Semantic HTML: real buttons/links, labeled inputs, visible focus, dialogs trap focus, color is not the only signal, usable touch targets. ARIA only when needed.

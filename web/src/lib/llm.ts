@@ -1,3 +1,13 @@
+import { authHeaders, completionsUrl } from "@/lib/endpoints";
+
+function isGateway(baseUrl: string) {
+  try {
+    return new URL(baseUrl).hostname === "ai-gateway.vercel.sh";
+  } catch {
+    return false;
+  }
+}
+
 export const QUALITY_MODEL = "gpt-6-astra";
 
 export type ChatMessage = {
@@ -19,11 +29,6 @@ export type StreamOpts = {
   useProxy?: boolean;
   tools?: { type: "function"; function: { name: string; description: string; parameters: object } }[];
 };
-
-function completionsUrl(baseUrl: string) {
-  const root = baseUrl.replace(/\/$/, "");
-  return root.endsWith("/v1") ? `${root}/chat/completions` : `${root}/v1/chat/completions`;
-}
 
 export function shouldUseProxy(baseUrl: string, mode: string, proxyViaVercel: boolean) {
   if (proxyViaVercel || mode === "server") {
@@ -59,7 +64,7 @@ async function readSseStream(res: Response, onDelta: (chunk: string) => void): P
         const json = JSON.parse(data) as {
           choices?: { delta?: { content?: string; tool_calls?: { index?: number; id?: string; function?: { name?: string; arguments?: string } }[] } }[];
         };
-        const delta = json.choices?.[0]?.delta;
+        const delta = json.choices?.[0]?.delta as { content?: string; reasoning?: string; tool_calls?: { index?: number; id?: string; function?: { name?: string; arguments?: string } }[] } | undefined;
         const piece = delta?.content || "";
         if (piece) {
           full += piece;
@@ -89,12 +94,13 @@ export async function chatComplete(opts: Omit<StreamOpts, "onDelta" | "signal">)
 
 export async function streamChat(opts: StreamOpts): Promise<{ text: string; toolCalls: ToolCallResult[] }> {
   const url = completionsUrl(opts.baseUrl);
+  const gateway = isGateway(opts.baseUrl);
   const payload: Record<string, unknown> = {
     model: opts.model || QUALITY_MODEL,
     messages: opts.messages,
-    temperature: opts.tools?.length ? 0.2 : 0.4,
     stream: true,
   };
+  if (!gateway) payload.temperature = opts.tools?.length ? 0.2 : 0.4;
   if (opts.tools?.length) {
     payload.tools = opts.tools;
     payload.tool_choice = "auto";
@@ -108,7 +114,7 @@ export async function streamChat(opts: StreamOpts): Promise<{ text: string; tool
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           url,
-          headers: opts.apiKey ? { Authorization: `Bearer ${opts.apiKey}` } : {},
+          headers: authHeaders(opts.baseUrl, opts.apiKey),
           payload: body,
         }),
       });
@@ -123,7 +129,7 @@ export async function streamChat(opts: StreamOpts): Promise<{ text: string; tool
       signal: opts.signal,
       headers: {
         "Content-Type": "application/json",
-        ...(opts.apiKey ? { Authorization: `Bearer ${opts.apiKey}` } : {}),
+        ...authHeaders(opts.baseUrl, opts.apiKey),
       },
       body: JSON.stringify(body),
     });
@@ -137,12 +143,19 @@ export async function streamChat(opts: StreamOpts): Promise<{ text: string; tool
   try {
     return await send(payload);
   } catch (error) {
-    if (!opts.tools?.length) throw error;
     const message = String(error);
-    if (!/400|404|422|tools/i.test(message)) throw error;
     const retry = { ...payload };
-    delete retry.tools;
-    delete retry.tool_choice;
+    let changed = false;
+    if (retry.temperature !== undefined && /400|422|temperature/i.test(message)) {
+      delete retry.temperature;
+      changed = true;
+    }
+    if (opts.tools?.length && /400|404|422|tools/i.test(message)) {
+      delete retry.tools;
+      delete retry.tool_choice;
+      changed = true;
+    }
+    if (!changed) throw error;
     return send(retry);
   }
 }

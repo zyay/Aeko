@@ -1,4 +1,4 @@
-import type { SkillEntry } from "@/lib/skills-registry";
+import { BUILTIN_SKILLS, type SkillEntry } from "@/lib/skills-registry";
 
 const KEY = "abc-installed-skills";
 const ROOM_KEY = "aeko-room-skills";
@@ -33,10 +33,16 @@ export function toggleRoomSkill(roomId: string, skillId: string) {
   return map[roomId];
 }
 
+function knownSkills(): SkillEntry[] {
+  const installed = listInstalledSkills();
+  const ids = new Set(installed.map((skill) => skill.id));
+  return [...BUILTIN_SKILLS.filter((skill) => !ids.has(skill.id)), ...installed];
+}
+
 export function findSkill(name: string): SkillEntry | undefined {
   const q = name.trim().toLowerCase();
   if (!q) return undefined;
-  return listInstalledSkills().find((s) => s.id.toLowerCase() === q || s.name.toLowerCase() === q || s.name.toLowerCase().includes(q) || q.includes(s.name.toLowerCase()));
+  return knownSkills().find((s) => s.id.toLowerCase() === q || s.name.toLowerCase() === q || s.name.toLowerCase().includes(q) || q.includes(s.name.toLowerCase()));
 }
 
 function mentioned(skill: SkillEntry, prompt: string) {
@@ -47,7 +53,7 @@ function mentioned(skill: SkillEntry, prompt: string) {
 
 export function matchingSkills(prompt: string, roomId: string | null): SkillEntry[] {
   const pinned = new Set(roomSkillIds(roomId));
-  return listInstalledSkills()
+  return knownSkills()
     .filter((s) => pinned.has(s.id) || mentioned(s, prompt))
     .slice(0, 3);
 }
@@ -58,7 +64,7 @@ export function skillQuery(text: string): string | null {
 }
 
 export function formatSkillList(roomId?: string | null) {
-  const skills = listInstalledSkills();
+  const skills = knownSkills();
   if (!skills.length) return "skill_list:\nNo skills installed. Add one on the desk Skills tab.";
   const pinned = new Set(roomId ? roomSkillIds(roomId) : []);
   return (

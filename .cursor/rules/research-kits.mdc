@@ -1,0 +1,14 @@
+---
+description: Research before new UI tech; prefer kits already in the repo
+alwaysApply: true
+---
+
+# Research and kits
+
+Already in `web/`: Next 15, React 18, Framer Motion, Primer Octicons, Geist, Zod, next-auth. CSS is flora tokens, not Tailwind. R3F was removed after it crashed login against this React; do not re-add it without a client-only, SSR-safe path and a non-WebGL fallback.
+
+Before a new npm package: confirm nothing already covers it, check docs, maintenance, Next 15 / React 18, license, a11y, bundle size, mobile. Install only for clear value. Prefer composing existing primitives.
+
+Do not add shadcn/Tailwind/MUI unless the task explicitly needs a new styling stack; restyle flora instead of a second design system.
+
+If web search is unavailable, say so and pick the safest option that matches current tokens and architecture.

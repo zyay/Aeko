@@ -26,3 +26,7 @@ Android one-time claim codes expire in 60 seconds and are deleted on first consu
 ## Work surface
 
 Home, Stream, Agents, and Workflows live in `web/src/components/work-hub.tsx`. Triage state is local (`aeko-triage`). Agent invite links are `/add/agent?id=`.
+
+## Product UI
+
+Treat the web app as production software. Design tokens are `web/src/app/flora.css`. Cursor rules in `.cursor/rules/` cover identity, kits, motion, a11y, and verification. Do not introduce a second styling stack (Tailwind/shadcn) on top of flora.

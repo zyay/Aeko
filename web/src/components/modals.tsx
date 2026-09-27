@@ -57,8 +57,14 @@ export function InviteModal({
   return (
     <div className="modal-bg" onClick={onClose} role="presentation">
       <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Invite collaborator">
-        <h2>Invite to task</h2>
-        <input className="field" value={email} onChange={(e) => onEmail(e.target.value)} placeholder="Email address" />
+        <h2>Invite into this room</h2>
+        <ol className="where">
+          <li>They sign in with GitHub or Google once, so Aeko has their public key.</li>
+          <li>You send a wrapped copy of the room key to their email. The server stores that wrap, not the key.</li>
+          <li>After they open the room, they can read it. Mention a bot with @Name. Tools are / in the composer.</li>
+        </ol>
+        <label className="setup-label" htmlFor="invite-email">Email</label>
+        <input id="invite-email" className="field" value={email} onChange={(e) => onEmail(e.target.value)} placeholder="name@company.com" autoComplete="off" />
         <label className="modal-label">
           Role
           <select className="field" value={role} onChange={(e) => onRole(e.target.value as "member" | "owner")}>
@@ -70,7 +76,7 @@ export function InviteModal({
           <button type="button" className="ghostlink" onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="blackpill" onClick={onSubmit}>
+          <button type="button" className="solid slim" onClick={onSubmit}>
             <Icon icon={Icons.team} size={16} aria-hidden /> Send invite
           </button>
         </div>

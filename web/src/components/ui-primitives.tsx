@@ -104,7 +104,7 @@ export function IconGlobe() {
 }
 
 export function IconSparkle() {
-  return <Icon icon={Icons.agent} size={18} aria-hidden />;
+  return <Mascot size={18} />;
 }
 
 export function IconSearch({ size = 16 }: { size?: number }) {

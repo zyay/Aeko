@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AGENT_ROSTER, AGENT_TOOLS, createCustomAgent, listAgents, type AgentTool } from "@/lib/agents";
+import { AGENT_ROSTER, AGENT_TOOLS, createCustomAgent, listAgents, type AgentDef, type AgentTool } from "@/lib/agents";
+import { Mascot } from "@/components/mascot";
 import { setTriage, triageMap, type Triage } from "@/lib/work-store";
 import type { Room, RoomPreview } from "@/components/aeko-app-types";
 import { EmptyState } from "@/components/ui-kit";
-import { CURATED_SKILLS, type SkillEntry } from "@/lib/skills-registry";
+import { BUILTIN_SKILLS, CURATED_SKILLS, type SkillEntry } from "@/lib/skills-registry";
 import { installSkill, listInstalledSkills, removeSkill } from "@/lib/skills-store";
 import { ConnectionsPanel } from "@/components/connections-panel";
 
@@ -18,6 +19,7 @@ export function WorkHub({
   formatTime,
   onOpenRoom,
   onCreate,
+  onStartAgent,
   tab: tabProp,
   onTab,
   activeAgentId,
@@ -29,6 +31,7 @@ export function WorkHub({
   formatTime?: (ts: number) => string;
   onOpenRoom: (id: string) => void;
   onCreate?: () => void;
+  onStartAgent?: (id: string) => void;
   tab?: (typeof TABS)[number];
   onTab?: (tab: (typeof TABS)[number]) => void;
   activeAgentId?: string;
@@ -130,53 +133,71 @@ export function WorkHub({
       )}
 
       {tab === "Agents" && (
-        <div className="setup-fields">
-          <p className="work-kicker">The selected bot answers in this channel. @Hands searches, opens a page, reads the note, runs code, and calls a connected app.</p>
-          <ConnectionsPanel />
-          <div className="pick-grid">
-            {agents.map((a) => (
-              <button key={a.id} type="button" className={activeAgentId === a.id ? "pick on" : "pick"} onClick={() => onAgentSelect?.(a.id)}>
-                <strong>{a.name}</strong>
-                <span>{a.tagline}</span>
-              </button>
-            ))}
-          </div>
-          <p className="work-kicker">Your own bot</p>
-          <input className="field" value={botName} placeholder="Name" onChange={(e) => setBotName(e.target.value)} />
-          <input className="field" value={botRole} placeholder="Role" onChange={(e) => setBotRole(e.target.value)} />
-          <textarea className="field" value={botPrompt} placeholder="Instructions" onChange={(e) => setBotPrompt(e.target.value)} />
-          <div className="tool-row">
-            {AGENT_TOOLS.map((tool) => {
-              const on = botTools.includes(tool.id);
-              return (
-                <button key={tool.id} type="button" className={on ? "tool on" : "tool"} onClick={() => setBotTools((current) => (on ? current.filter((id) => id !== tool.id) : [...current, tool.id]))}>
-                  {tool.label}
+        <div className="hub-sections">
+          <AgentMeet agents={agents.length ? agents : AGENT_ROSTER} onStart={(id) => onStartAgent?.(id)} />
+          <section>
+            <h2>People and apps</h2>
+            <p>A person joins with an invite from a channel. An app token stays in this browser, and Hands can call only the actions on the card.</p>
+            <ConnectionsPanel />
+          </section>
+          <section>
+            <h2>Bots in the room</h2>
+            <p>Click one to pin it. In the composer, type @ and their name. Type / for search, a page, code, or a connected app.</p>
+            <div className="agent-grid">
+              {agents.map((a) => (
+                <button key={a.id} type="button" className={activeAgentId === a.id ? "agent-card on" : "agent-card"} onClick={() => onAgentSelect?.(a.id)}>
+                  <strong>{a.name}{a.kind === "decision" ? " · Decision" : a.thinking ? " · Thinking" : ""}</strong>
+                  <span>{a.use || a.tagline}</span>
+                  <em>{a.tools.length} tools · @{a.name}</em>
                 </button>
-              );
-            })}
-          </div>
-          <button
-            type="button"
-            className="blackpill"
-            disabled={botName.trim().length < 2 || botPrompt.trim().length < 8}
-            onClick={() => {
-              const agent = createCustomAgent({ name: botName, tagline: botRole, systemPrompt: botPrompt, tools: botTools });
-              setBotName("");
-              setBotRole("");
-              setBotPrompt("");
-              onAgentSelect?.(agent.id);
-            }}
-          >
-            Create bot
-          </button>
+              ))}
+            </div>
+            <p className="pick-label">Your own bot</p>
+            <input className="field" value={botName} placeholder="Name" onChange={(e) => setBotName(e.target.value)} />
+            <input className="field" value={botRole} placeholder="Role" onChange={(e) => setBotRole(e.target.value)} />
+            <textarea className="field" value={botPrompt} placeholder="Instructions. At least a sentence." onChange={(e) => setBotPrompt(e.target.value)} />
+            <div className="tool-row">
+              {AGENT_TOOLS.map((tool) => {
+                const on = botTools.includes(tool.id);
+                return (
+                  <button key={tool.id} type="button" className={on ? "tool on" : "tool"} onClick={() => setBotTools((current) => (on ? current.filter((id) => id !== tool.id) : [...current, tool.id]))}>
+                    {tool.label}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              className="solid"
+              disabled={botName.trim().length < 2 || botPrompt.trim().length < 8}
+              onClick={() => {
+                const agent = createCustomAgent({ name: botName, tagline: botRole, systemPrompt: botPrompt, tools: botTools });
+                setBotName("");
+                setBotRole("");
+                setBotPrompt("");
+                onAgentSelect?.(agent.id);
+              }}
+            >
+              Create bot
+            </button>
+          </section>
         </div>
       )}
 
       {tab === "Skills" && (
         <div className="work-list">
-          <p className="work-kicker">Installed skills are read by channel agents when you name them, pin them, or type /.</p>
+          <p className="work-kicker">Ready skills are already on this device. Name one in the channel, or install more below.</p>
+          {BUILTIN_SKILLS.map((s) => (
+            <div key={s.id} className="work-row static">
+              <div>
+                <strong>{s.name}</strong>
+                <div className="work-muted">{s.description}</div>
+              </div>
+              <span className="head-chip on">Ready</span>
+            </div>
+          ))}
           {installed.length === 0 && (
-            <EmptyState title="No skills yet" body="Install a skill below. Agents can read it when you name it or pin it to a channel." />
+            <p className="work-kicker">No extra skills installed yet.</p>
           )}
           {installed.map((s) => (
             <div key={s.id} className="work-row static">
@@ -236,6 +257,7 @@ export function WorkHub({
         <div className="work-list">
           <WorkflowForm
             roomId={roomId ?? null}
+            rooms={rooms.map((room) => ({ id: room.id, title: room.title }))}
             onSaved={() => {
               void fetch("/api/workflows")
                 .then((r) => r.json())
@@ -260,30 +282,100 @@ export function WorkHub({
   );
 }
 
-function WorkflowForm({ roomId, onSaved }: { roomId: string | null; onSaved: () => void }) {
+function AgentMeet({ agents, onStart }: { agents: AgentDef[]; onStart: (id: string) => void }) {
+  const [index, setIndex] = useState(0);
+  const [color, setColor] = useState("");
+  const agent = agents[index] ?? agents[0];
+  const colors = ["", "#111111", "#4C8DFF", "#ff5a1f", "#8e8e93"];
+
+  useEffect(() => {
+    setColor(window.localStorage.getItem("aeko-mascot-color") || "");
+  }, []);
+
+  function paint(next: string) {
+    setColor(next);
+    if (next) window.localStorage.setItem("aeko-mascot-color", next);
+    else window.localStorage.removeItem("aeko-mascot-color");
+    window.dispatchEvent(new Event("aeko-mascot"));
+  }
+
+  const presets = ["#111111", "#4C8DFF", "#ff5a1f", "#8e8e93"];
+  if (!agent) return null;
+  return (
+    <section className="agent-meet">
+      <p className="desk-kicker">Meet a bot</p>
+      <h2>{agent.name}</h2>
+      <Mascot size={96} color={color || presets[index % presets.length]} label={agent.name} />
+      <p>
+        {agent.kind === "decision"
+          ? "Jev scores the situation into a next step, a risk, and a yes or no. Type @Jev and the situation. The scores stay in the private thread."
+          : `${agent.use || agent.tagline} Tools: ${agent.tools.length}${agent.thinking ? ". Prefers thinking." : "."} In a channel, type @${agent.name} and the task.`}
+      </p>
+      <div className="meet-names">
+        {agents.map((item, i) => (
+          <button key={item.id} type="button" className={i === index ? "on" : ""} onClick={() => setIndex(i)}>
+            {item.name}
+          </button>
+        ))}
+      </div>
+      <div className="meet-nav">
+        <button type="button" className="setup-back" onClick={() => setIndex((i) => (i - 1 + agents.length) % agents.length)}>Previous</button>
+        <button type="button" className="solid slim" onClick={() => onStart(agent.id)}>Start chat</button>
+        <button type="button" className="setup-back" onClick={() => setIndex((i) => (i + 1) % agents.length)}>Next</button>
+      </div>
+      <p className="pick-label">Your face color</p>
+      <div className="swatches">
+        {colors.map((item) => (
+          <button key={item || "theme"} type="button" className={color === item ? "on" : ""} aria-label={item || "Theme color"} style={{ background: item || "currentColor" }} onClick={() => paint(item)} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function WorkflowForm({ roomId, rooms, onSaved }: { roomId: string | null; rooms: { id: string; title: string }[]; onSaved: () => void }) {
   const [name, setName] = useState("Triage");
-  const [yaml, setYaml] = useState(`on: message\nchannel: ${roomId ?? ""}\nagent: aeko`);
+  const [channel, setChannel] = useState(roomId || rooms[0]?.id || "");
+  const [agent, setAgent] = useState("aeko");
   const [note, setNote] = useState("");
+  const yaml = `on: message\nchannel: ${channel}\nagent: ${agent}`;
   return (
     <form
       className="sidebar-create"
       onSubmit={(e) => {
         e.preventDefault();
+        if (!channel) {
+          setNote("Open or create a channel first. A workflow runs inside one room.");
+          return;
+        }
         void fetch("/api/workflows", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, yaml, enabled: true }),
         }).then((res) => {
-          setNote(res.ok ? "Saved" : "Could not save");
+          setNote(res.ok ? "Saved. The chosen bot runs once when a message arrives in that room." : "Could not save");
           if (res.ok) onSaved();
         });
       }}
     >
-      <p className="work-kicker">{roomId ? `Runs when a message arrives in this channel (${roomId}).` : "Open a channel first. This workflow needs a channel id."}</p>
-      <input value={name} onChange={(e) => setName(e.target.value)} aria-label="Workflow name" />
-      <textarea value={yaml} onChange={(e) => setYaml(e.target.value)} rows={4} aria-label="Workflow yaml" />
-      <button type="submit">Save workflow</button>
-      {note && <p>{note}</p>}
+      <p className="work-kicker">Where: this page. What: one bot step after a message. How: name it, pick the room, pick the bot, then save.</p>
+      <label className="setup-label" htmlFor="flow-name">Name</label>
+      <input id="flow-name" value={name} onChange={(e) => setName(e.target.value)} />
+      <label className="setup-label" htmlFor="flow-room">Room</label>
+      <select id="flow-room" className="field" value={channel} onChange={(e) => setChannel(e.target.value)}>
+        {!rooms.length && <option value="">No room yet</option>}
+        {rooms.map((room) => (
+          <option key={room.id} value={room.id}>{room.title}</option>
+        ))}
+      </select>
+      <label className="setup-label" htmlFor="flow-agent">Bot</label>
+      <select id="flow-agent" className="field" value={agent} onChange={(e) => setAgent(e.target.value)}>
+        {AGENT_ROSTER.map((item) => (
+          <option key={item.id} value={item.id}>{item.name} — {item.tagline}</option>
+        ))}
+      </select>
+      <button type="submit" className="solid">Save workflow</button>
+      {note && <p className="tiny">{note}</p>}
     </form>
   );
 }

@@ -1,0 +1,18 @@
+---
+description: Treat Aeko as production software with a coherent design system
+alwaysApply: true
+---
+
+# Product standard
+
+You are lead product designer and senior frontend for this repo. Ship a polished product people would use, not a generic website, template dashboard, or prototype.
+
+Before changing UI: inspect routes, components, `web/package.json`, `web/src/app/flora.css` tokens, and the real workflow (desk, channel, agents, settings, login). Fix hierarchy and IA when a local patch would leave the product inconsistent.
+
+Preserve working behavior unless replacing it is clearly better. Do not weaken E2EE (see `.github/AGENTS.md`). Do not add a server path that decrypts a room and forwards plaintext to a model.
+
+Design tokens live in flora CSS (`--flora-*`). Reuse them. No random hex, no purple-blue AI chrome, no orange, no decorative gradients or glow, no excessive glass or 28px cards. Tight type, hairline borders, 6–8px radius, visible focus, strong contrast.
+
+Shared primitives for buttons, fields, dialogs, menus, tabs, empty/loading/error. Do not invent one-off chrome when a shared piece exists.
+
+Every important action needs idle, hover, focus, loading, success, error, disabled, and empty (and offline when relevant). No fake buttons or placeholder copy presented as finished.

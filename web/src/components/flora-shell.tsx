@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { MoonIcon, SunIcon } from "@primer/octicons-react";
+
+const DeskField = dynamic(() => import("@/components/desk-field").then((m) => m.DeskField), { ssr: false });
 import { Icon, Icons } from "@/components/icons";
 import { Mascot } from "@/components/mascot";
 import { signOutNow } from "@/lib/sign-out";
@@ -11,7 +14,7 @@ import { signOutNow } from "@/lib/sign-out";
 export type FloraTab = "Home" | "Stream" | "Agents" | "Skills" | "Workflows";
 
 const THEME_KEY = "aeko-theme";
-const spring = { type: "spring" as const, stiffness: 420, damping: 34 };
+const spring = { type: "spring" as const, stiffness: 520, damping: 38 };
 
 function useRise() {
   const reduce = useReducedMotion();
@@ -35,9 +38,10 @@ export function FloraFrame({ children }: { children: ReactNode }) {
   const { theme, setMode } = useFloraTheme();
   const rise = useRise();
   return (
-    <div className="flora" data-theme={theme}>
+    <div className="flora flora-plain" data-theme={theme}>
+      <DeskField light={theme === "light"} />
       <div className="flora-stage">
-        <motion.div className="flora-center plain" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={rise}>
+        <motion.div className="flora-center plain" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={rise}>
           {children}
         </motion.div>
       </div>
@@ -101,9 +105,11 @@ export function FloraShell({
     onActive("Home");
   }
 
-  const rails: { id: FloraTab; label: string; icon: typeof Icons.home }[] = [
+  const overview: { id: FloraTab; label: string; icon: typeof Icons.home }[] = [
     { id: "Home", label: "Channels", icon: Icons.home },
     { id: "Stream", label: "Stream", icon: Icons.task },
+  ];
+  const workspace: { id: FloraTab; label: string; icon: typeof Icons.home }[] = [
     { id: "Agents", label: "Agents", icon: Icons.agent },
     { id: "Skills", label: "Skills", icon: Icons.file },
     { id: "Workflows", label: "Workflows", icon: Icons.brain },
@@ -111,43 +117,70 @@ export function FloraShell({
 
   return (
     <div className="flora" data-theme={theme}>
-      <div className="flora-stage">{children}</div>
-      <header className="flora-top">
-        <button type="button" className="flora-brand" title={hint ? `${title}. ${hint}` : title} onClick={() => onActive("Home")}>
-          <Mascot size={18} />
-          <span className="flora-title">{title}</span>
-          <span className="flora-caret">▾</span>
+      <DeskField light={theme === "light"} />
+      <nav className="flora-rail" aria-label="Workspace" data-tour="rail">
+        <button type="button" className="flora-team" title={hint ? `${title}. ${hint}` : title} onClick={() => onActive("Home")}>
+          <Mascot size={20} />
+          <span>
+            <b>Aeko</b>
+            <em>{title}</em>
+          </span>
         </button>
-        <button type="button" className="flora-share" onClick={onShare}>Share</button>
-      </header>
-      <nav className="flora-rail" aria-label="Workspace">
-        <motion.button type="button" className="flora-plus" aria-label="New channel" title="New channel" whileTap={{ scale: 0.9 }} transition={rise} onClick={() => setPanel(panel === "create" ? null : "create")}>
-          <Icon icon={Icons.plus} size={18} />
+        <motion.button type="button" className="flora-plus" aria-label="New channel" title="New channel" whileTap={{ scale: 0.98 }} transition={rise} onClick={() => setPanel(panel === "create" ? null : "create")}>
+          <Icon icon={Icons.plus} size={16} />
+          <span>Add New</span>
         </motion.button>
-        {rails.map((item) => (
-          <motion.button key={item.id} type="button" className={active === item.id ? "on" : ""} aria-label={item.label} title={item.label} whileTap={{ scale: 0.9 }} transition={rise} onClick={() => { setPanel(null); onActive(item.id); }}>
+        <p className="flora-rail-label">Overview</p>
+        {overview.map((item) => (
+          <motion.button key={item.id} type="button" className={active === item.id ? "on" : ""} aria-label={item.label} title={item.label} whileTap={{ scale: 0.98 }} transition={rise} onClick={() => { setPanel(null); onActive(item.id); }}>
             <Icon icon={item.icon} size={16} />
+            <span>{item.label}</span>
           </motion.button>
         ))}
-        <motion.button type="button" aria-label="Search" title="Search" whileTap={{ scale: 0.9 }} transition={rise} onClick={onSearch}>
-          <Icon icon={Icons.search} size={16} />
-        </motion.button>
-        <motion.button type="button" aria-label="Settings" title="Settings" whileTap={{ scale: 0.9 }} transition={rise} onClick={onSettings}>
+        <p className="flora-rail-label">Workspace</p>
+        {workspace.map((item) => (
+          <motion.button key={item.id} type="button" className={active === item.id ? "on" : ""} aria-label={item.label} title={item.label} data-tour={item.id === "Agents" ? "agents" : undefined} whileTap={{ scale: 0.98 }} transition={rise} onClick={() => { setPanel(null); onActive(item.id); }}>
+            <Icon icon={item.icon} size={16} />
+            <span>{item.label}</span>
+          </motion.button>
+        ))}
+        <motion.button type="button" aria-label="Settings" title="Settings" data-tour="settings" whileTap={{ scale: 0.98 }} transition={rise} onClick={onSettings}>
           <Icon icon={Icons.gear} size={16} />
+          <span>Settings</span>
         </motion.button>
         <div className="flora-rail-gap" />
+        <button type="button" className="flora-status" onClick={onNotify}>
+          {brainOk ? "Live" : "Offline"} · {taskCount}
+        </button>
         <button type="button" aria-label={theme === "dark" ? "Light theme" : "Dark theme"} title={theme === "dark" ? "Light theme" : "Dark theme"} onClick={() => setMode(theme === "dark" ? "light" : "dark")}>
           <Icon icon={theme === "dark" ? SunIcon : MoonIcon} size={16} />
+          <span>{theme === "dark" ? "Light" : "Dark"}</span>
         </button>
-        <button type="button" className="flora-avatar" aria-label="Account" onClick={() => setPanel(panel === "account" ? null : "account")}>
-          {(userEmail[0] ?? "A").toUpperCase()}
+        <button type="button" className="flora-account" aria-label="Account" onClick={() => setPanel(panel === "account" ? null : "account")}>
+          <span className="flora-avatar">{(userEmail[0] ?? "A").toUpperCase()}</span>
+          <span>{userEmail}</span>
         </button>
       </nav>
+      <header className="flora-top">
+        <div className="flora-crumbs">
+          <span>Aeko</span>
+          <span>/</span>
+          <strong>{title}</strong>
+        </div>
+        <div className="flora-top-actions">
+          <button type="button" className="flora-find" onClick={onSearch}>
+            Find…
+            <kbd>Ctrl K</kbd>
+          </button>
+          <button type="button" className="flora-share" data-tour="share" onClick={onShare}>Share</button>
+        </div>
+      </header>
+      <div className="flora-stage">{children}</div>
       {panel === "create" && (
-        <motion.form className="flora-pop" onSubmit={create} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={rise}>
-          <strong>New channel</strong>
+        <motion.form className="flora-pop" onSubmit={create} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={rise}>
+          <strong>Create</strong>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" aria-label="Channel name" />
-          <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Topic" aria-label="Topic" />
+          <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Description" aria-label="Topic" />
           <select value={kind} onChange={(e) => setKind(e.target.value as typeof kind)} aria-label="Kind">
             <option value="channel">Channel</option>
             <option value="dm">DM</option>
@@ -162,20 +195,16 @@ export function FloraShell({
         </motion.form>
       )}
       {panel === "account" && (
-        <motion.div className="flora-pop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={rise}>
+        <motion.div className="flora-pop flora-pop-account" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={rise}>
           <strong>{userEmail}</strong>
-          <p>{brainOk ? "Model live" : "Model offline"}</p>
+          <p>{brainOk ? "Ready" : "Connect a model in Settings"}</p>
           <button type="button" className="flora-pop-btn" onClick={onSettings}>Settings</button>
           <Link href="/learn/plan">Learn</Link>
           <form action={signOutNow}>
-            <button type="submit" className="flora-signout">Sign out</button>
+            <button type="submit" className="flora-signout">Log Out</button>
           </form>
         </motion.div>
       )}
-      <div className="flora-foot left">{brainOk ? "E2EE · live" : "E2EE · offline"}</div>
-      <button type="button" className="flora-foot right" onClick={onNotify}>
-        Tasks <b>{taskCount}</b> active
-      </button>
     </div>
   );
 }

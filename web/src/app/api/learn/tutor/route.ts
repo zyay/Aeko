@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { authHeaders, completionsUrl } from "@/lib/endpoints";
 import { rateLimit } from "@/lib/rate-limit";
 import { topicLabels } from "@/lib/learn-data";
 import { NextRequest, NextResponse } from "next/server";
@@ -17,11 +18,6 @@ type TutorBody = {
     model?: string;
   };
 };
-
-function completionsUrl(baseUrl: string) {
-  const root = baseUrl.replace(/\/$/, "");
-  return root.endsWith("/v1") ? `${root}/chat/completions` : `${root}/v1/chat/completions`;
-}
 
 function buildSystem(profile: TutorBody["profile"]) {
   const topics = profile?.topics?.length ? topicLabels(profile.topics).join(", ") : "general topics";
@@ -64,7 +60,7 @@ export async function POST(req: NextRequest) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      ...authHeaders(baseUrl, apiKey),
     },
     body: JSON.stringify(payload),
   });

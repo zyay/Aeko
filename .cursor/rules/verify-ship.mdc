@@ -1,0 +1,14 @@
+---
+description: Verify UI work; ship via prod deploy; no local Next server
+alwaysApply: true
+---
+
+# Verify and ship
+
+Phases for large UI work: audit → direction → tokens/primitives → screens → motion → verify. Do not skip to decoration.
+
+After UI changes: `npx tsc --noEmit` in `web/`, fix lint/type errors, think through keyboard and empty/error states. Do not start a local Next/Vercel server. Deploy from repo root with `npx vercel --prod --yes`, then `npx vercel alias set <host> aeko.vercel.app`. Do not print production hostnames in user replies. Public name is getaeko.com.
+
+Do not commit or push unless asked. Do not claim done with a red build, a white-screen client exception, or a broken login.
+
+Decide independently unless the change risks E2EE, auth, secrets, billing, or irreversible data.

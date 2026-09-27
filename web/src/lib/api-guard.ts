@@ -81,3 +81,9 @@ export const pushSchema = z.object({
   endpoint: z.string().trim().url().max(2000),
   keys: z.object({ p256dh: text(400), auth: text(400) }),
 });
+
+export const providerProbeSchema = z.object({
+  baseUrl: z.string().trim().url().max(300),
+  apiKey: z.string().max(500).optional(),
+  model: z.string().trim().max(200).optional(),
+});

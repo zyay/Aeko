@@ -101,6 +101,7 @@ export function AekoApp({
           onPalette={() => ws.setPaletteOpen(true)}
           onSettings={ws.goSettings}
           onCreateTask={ws.createTask}
+          onStartAgent={ws.startWithAgent}
           onOpenRoom={ws.openChat}
           onRunChip={(c) => ws.run(c, true)}
           onWebMode={() => ws.setWebMode((v) => !v)}
@@ -114,6 +115,13 @@ export function AekoApp({
             if (ws.roomId) setRoomAgentId(ws.roomId, id);
           }}
           roomId={ws.roomId}
+          onInvite={() => {
+            if (!ws.roomId) {
+              ws.setStatus("Open a channel first. Then invite them into that room.");
+              return;
+            }
+            ws.setShowInvite(true);
+          }}
         />
       )}
       {ws.view === "chat" && (
@@ -162,6 +170,21 @@ export function AekoApp({
           onReact={(id, emoji) => void ws.reactTo(id, emoji)}
           onClearReply={() => ws.setReplyParent(null)}
           onShareRecord={(text) => void ws.shareRecord(text)}
+          onInvite={() => ws.setShowInvite(true)}
+          agentOpen={ws.agentOpen}
+          agentNote={ws.agentNote}
+          agentLog={ws.agentLog}
+          shareAsk={ws.shareAsk}
+          shareMode={ws.shareMode}
+          steer={ws.steer}
+          agentPrefs={ws.agentPrefs}
+          onOpenAgent={() => ws.setAgentOpen(true)}
+          onCloseAgent={() => ws.setAgentOpen(false)}
+          onChooseShare={ws.chooseShare}
+          onSteerDraft={ws.setSteer}
+          onSteer={ws.steerAgent}
+          onAgentPrefs={ws.updateAgentPrefs}
+          onPublishAnswer={ws.publishAgentAnswer}
           onCopy={(line) => {
             navigator.clipboard.writeText(line.text);
             ws.setSheet(null);

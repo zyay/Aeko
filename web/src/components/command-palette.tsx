@@ -43,15 +43,15 @@ export function CommandPalette({
 
   return (
     <div className="palette-bg" onClick={onClose} role="presentation">
-      <div className="palette" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Command palette">
+        <div className="palette" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Fast search">
         <div className="palette-search">
           <IconSearch size={18} />
           <input
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search commands and tasks…"
-            aria-label="Command search"
+            placeholder="Fast search"
+            aria-label="Fast search"
             onKeyDown={(e) => {
               if (e.key === "Escape") onClose();
               if (e.key === "ArrowDown") {

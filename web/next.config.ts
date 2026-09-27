@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   eslint: { ignoreDuringBuilds: false },
   outputFileTracingRoot: process.cwd(),
-  transpilePackages: ["border-beam", "thinking-orbs"],
+  transpilePackages: ["border-beam", "thinking-orbs", "geist"],
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

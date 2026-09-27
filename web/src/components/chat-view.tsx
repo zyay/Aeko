@@ -1,16 +1,17 @@
 "use client";
 
 import type { FormEvent, RefObject } from "react";
-import { AgentOrb } from "@/components/agent-orb";
 import { ToolTracePanel } from "@/components/activity-rail";
 import { ThinkingOrb } from "@/components/thinking-orb";
 import { Icon, Icons } from "@/components/icons";
 import { IconBtn } from "@/components/ui-kit";
 import { Mascot } from "@/components/mascot";
 import type { BrainConfig, Line } from "@/components/aeko-app-types";
-import { listAgents, mentionQuery, type AgentDef } from "@/lib/agents";
-import { listInstalledSkills, skillQuery } from "@/lib/skill-context";
+import type { AgentDef } from "@/lib/agents";
+import { ComposerMenu, useComposerMenu } from "@/components/composer-menu";
 import { ChannelExtras } from "@/components/channel-extras";
+import { AgentLane, ShareGate } from "@/components/agent-lane";
+import type { AgentPrefs, AgentTurn, ShareMode } from "@/lib/room-policy";
 import {
   IconAttach,
   IconBack,
@@ -22,7 +23,12 @@ import {
   MessageRow,
 } from "@/components/ui-primitives";
 
-const CHIPS = ["@Hands research", "@Writer brief", "@Hands apps", "Write code"];
+const CHIPS: { label: string; title: string; text: string }[] = [
+  { label: "Hands · search", title: "Hands searches the web, then answers from what it found.", text: "@Hands search the web for what matters here, then open the best page." },
+  { label: "Writer · brief", title: "Writer drafts a short brief and leads with decisions.", text: "@Writer draft a short brief for this channel. Lead with decisions." },
+  { label: "Reviewer · risk", title: "Reviewer leads with the highest risk.", text: "@Reviewer look for the highest risk in what we have so far." },
+  { label: "Hands · apps", title: "Hands lists connected apps and recent GitHub repos if GitHub is connected.", text: "@Hands list my connected apps. If GitHub is connected, list my recent repos." },
+];
 
 const STARTS = [
   { title: "Research", text: "@Hands search the web for what matters here, then open the best page." },
@@ -67,11 +73,24 @@ export function ChatView({
   onReply,
   onCopy,
   onRegenerate,
-  reactions = [],
   replyParent = null,
-  onReact,
   onClearReply,
   onShareRecord,
+  onInvite,
+  agentOpen = false,
+  agentNote = "",
+  agentLog = [],
+  shareAsk = false,
+  shareMode = null,
+  steer = "",
+  agentPrefs,
+  onOpenAgent,
+  onCloseAgent,
+  onChooseShare,
+  onSteerDraft,
+  onSteer,
+  onAgentPrefs,
+  onPublishAnswer,
 }: {
   current: string;
   roomId: string | null;
@@ -113,14 +132,30 @@ export function ChatView({
   onReact?: (messageId: string, emoji: string) => void;
   onClearReply?: () => void;
   onShareRecord?: (plaintext: string) => void;
+  onInvite?: () => void;
+  agentOpen?: boolean;
+  agentNote?: string;
+  agentLog?: AgentTurn[];
+  shareAsk?: boolean;
+  shareMode?: ShareMode | null;
+  steer?: string;
+  agentPrefs?: AgentPrefs;
+  onOpenAgent?: () => void;
+  onCloseAgent?: () => void;
+  onChooseShare?: (mode: ShareMode) => void;
+  onSteerDraft?: (text: string) => void;
+  onSteer?: (text: string) => void;
+  onAgentPrefs?: (prefs: AgentPrefs) => void;
+  onPublishAnswer?: (text: string) => void;
 }) {
+  const menu = useComposerMenu(draft, onDraft, members, onInvite);
   return (
     <div className="chat-overlay">
       <div className="thread-head">
         <button className="iconbtn" type="button" aria-label="Back to dashboard" onClick={onBack}>
           <IconBack />
         </button>
-        <AgentOrb state={enginePhase} size={48} />
+        <Mascot size={48} label={activeAgent.name} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <strong>{current}</strong>
           <div className="thread-meta">
@@ -145,11 +180,11 @@ export function ChatView({
           </>
         )}
         <div className="thread-head-actions">
-          <button type="button" className={codeMode ? "head-chip on" : "head-chip"} onClick={onCodeMode}>
+          <button type="button" className={codeMode ? "head-chip on" : "head-chip"} title="Code mode. The bot may write and run code in this browser." onClick={onCodeMode}>
             Code
           </button>
-          <button type="button" className={agentMode ? "head-chip on" : "head-chip"} onClick={onAgentMode}>
-            Agent
+          <button type="button" className={agentOpen ? "head-chip on" : "head-chip"} title="Open the private agent thread. People in the room do not see it." onClick={onOpenAgent}>
+            Agent thread
           </button>
           <button type="button" className="iconbtn" aria-label="Settings" onClick={onSettings}>
             <IconSettings />
@@ -162,6 +197,22 @@ export function ChatView({
         </div>
       </div>
 
+      {agentNote && <p className="agent-banner">{agentNote}</p>}
+      <ShareGate open={shareAsk} saved={shareMode} onChoose={(mode) => onChooseShare?.(mode)} />
+      <AgentLane
+        open={agentOpen}
+        agent={activeAgent}
+        note={agentNote}
+        turns={agentLog}
+        prefs={agentPrefs ?? { model: "", context: true, fast: false, thinking: false }}
+        steer={steer}
+        busy={busy}
+        onClose={() => onCloseAgent?.()}
+        onSteer={(text) => onSteer?.(text)}
+        onDraft={(text) => onSteerDraft?.(text)}
+        onPrefs={(prefs) => onAgentPrefs?.(prefs)}
+        onShareResult={(text) => onPublishAnswer?.(text)}
+      />
       <div className="thread-body" ref={bodyRef}>
         <div className="thread-body-inner">
           {messages.length === 0 && (
@@ -170,7 +221,7 @@ export function ChatView({
                 <Mascot size={40} />
                 <p className="desk-kicker">{activeAgent.name}</p>
                 <h2>{current || "This channel"}</h2>
-                <p>The thread is empty. A mention runs that bot. Notes in the canvas stay encrypted with the room.</p>
+                <p>Notes here go to the people in the room. @Name runs that bot in a private thread they cannot see.</p>
               </div>
               <div className="start-grid">
                 {STARTS.map((item) => (
@@ -186,12 +237,10 @@ export function ChatView({
             <div key={m.id}>
               <MessageRow line={m} busy={busy} onContextMenu={(e) => { e.preventDefault(); onContextMenu(m); }} />
               <div className="msg-actions">
-                <button type="button" onClick={() => onReply(m)}>Reply</button>
-                {["👍", "✅", "👀"].map((emoji) => (
-                  <button key={emoji} type="button" onClick={() => onReact?.(m.id, emoji)}>
-                    {emoji} {reactions.filter((r) => r.messageId === m.id && r.emoji === emoji).length || ""}
-                  </button>
-                ))}
+                <button type="button" title="Reply in a thread under this note" onClick={() => onReply(m)}>Reply</button>
+                <button type="button" title="Hands searches and can use a connected app on this note" onClick={() => onRunChip(`@Hands use this note and say the next step:\n${m.text.slice(0, 500)}`)}>Hands</button>
+                <button type="button" title="Writer turns this note into a short brief" onClick={() => onRunChip(`@Writer turn this into a short brief:\n${m.text.slice(0, 500)}`)}>Writer</button>
+                <button type="button" title="Reviewer names the highest risk in this note" onClick={() => onRunChip(`@Reviewer name the highest risk in this:\n${m.text.slice(0, 500)}`)}>Reviewer</button>
               </div>
               {messages.filter((r) => r.parentId === m.id).map((r) => (
                 <div key={r.id} className="thread-reply">
@@ -210,8 +259,8 @@ export function ChatView({
         <div className="composer-dock-inner">
           <div className="chips">
             {CHIPS.map((c) => (
-              <button key={c} type="button" className="chip" onClick={() => onRunChip(c === "@Hands research" ? "@Hands search the web for what matters here, then open the best page." : c === "@Writer brief" ? "@Writer draft a short brief for this channel. Lead with decisions." : c === "@Hands apps" ? "@Hands list my connected apps. If GitHub is connected, list my recent repos." : c)}>
-                {c}
+              <button key={c.label} type="button" className="chip" title={c.title} onClick={() => onRunChip(c.text)}>
+                {c.label}
               </button>
             ))}
           </div>
@@ -223,18 +272,18 @@ export function ChatView({
           )}
           <form className="composer" onSubmit={onSubmit}>
             <div className="composer-tools">
-              <button type="button" aria-label="Attach" onClick={onShowAttach}>
+              <button type="button" aria-label="Attach a file. The bot can read it in this browser." title="Attach a file. The bot can read it in this browser." onClick={onShowAttach}>
                 <IconAttach />
               </button>
               {showAttach && (
-                <button type="button" aria-label="File" onClick={() => document.getElementById("vault-file")?.click()}>
+                <button type="button" aria-label="Choose a file" title="Choose a file" onClick={() => document.getElementById("vault-file")?.click()}>
                   <IconFile />
                 </button>
               )}
-              <button type="button" className={webMode ? "on" : ""} aria-label="Web search" onClick={onWebMode}>
+              <button type="button" className={webMode ? "on" : ""} aria-label="Web search. Hands may look up the web for this message." title="Web search. Hands may look up the web for this message." onClick={onWebMode}>
                 <IconGlobe />
               </button>
-              <button type="button" className={agentMode ? "on" : ""} aria-label="Agent mode" onClick={onAgentMode}>
+              <button type="button" className={agentMode ? "on" : ""} aria-label="Agent mode. The bot may call tools." title="Agent mode. The bot may call tools." onClick={onAgentMode}>
                 <IconSparkle />
               </button>
             </div>
@@ -248,44 +297,18 @@ export function ChatView({
               }}
             />
             <div className="composer-input">
-              {skillQuery(draft) !== null && (
-                <div className="mention-pop" role="listbox" aria-label="Skills">
-                  {listInstalledSkills()
-                    .filter((s) => s.name.toLowerCase().includes(skillQuery(draft) || "") || s.id.includes(skillQuery(draft) || ""))
-                    .slice(0, 6)
-                    .map((s) => (
-                      <button key={s.id} type="button" onClick={() => onDraft(draft.replace(/(?:^|\s)\/([a-z0-9 -]*)$/i, ` ${s.name} `).trimStart())}>
-                        {s.name}
-                        <span>{s.description}</span>
-                      </button>
-                    ))}
-                  {listInstalledSkills().length === 0 && <p>Install a skill from the desk Skills tab, then type /.</p>}
-                </div>
-              )}
-              {mentionQuery(draft) !== null && (
-                <div className="mention-pop" role="listbox" aria-label="Agents">
-                  {listAgents().filter((a) => a.name.toLowerCase().includes(mentionQuery(draft) || "") || a.id.includes(mentionQuery(draft) || "")).map((a) => (
-                    <button
-                      key={a.id}
-                      type="button"
-                      onClick={() => onDraft(draft.replace(/@([a-z0-9 -]*)$/i, `@${a.name} `))}
-                    >
-                      @{a.name}
-                      <span>{a.tagline}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <ComposerMenu menu={menu.menu} active={menu.active} onActive={menu.setActive} onPick={menu.pick} />
               <textarea
                 value={draft}
                 onChange={(e) => {
                   onDraft(e.target.value);
                   onTyping(true);
                 }}
-                placeholder="Message the channel. @Hands, @Writer, or / for a skill"
+                placeholder="Write to the person. @Name runs that bot in the private thread."
                 rows={1}
                 aria-label="Message"
                 onKeyDown={(e) => {
+                  if (menu.onKeyDown(e)) return;
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     onSend();
@@ -293,7 +316,7 @@ export function ChatView({
                 }}
               />
             </div>
-            <button className="sendbtn" type="submit" disabled={!draft.trim() || busy} aria-label="Send">
+            <button className="sendbtn" type="submit" disabled={!draft.trim()} aria-label="Send">
               <IconSend />
             </button>
           </form>
