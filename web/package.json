@@ -24,7 +24,7 @@
     "next-auth": "5.0.0-beta.32",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "thinking-orbs": "^0.3.1",
+    "thinking-orbs": "^0.3.2",
     "web-push": "^3.6.7",
     "zod": "^3.25.76"
   },
